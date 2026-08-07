@@ -25,6 +25,24 @@ class AssignmentSerializer(serializers.ModelSerializer):
         )
         read_only_fields = ("id", "course", "created_at", "updated_at")
 
+    def validate_title(self, value):
+        value = value.strip()
+        if not value:
+            raise serializers.ValidationError("Title is required.")
+        return value
+
+    def validate_max_score(self, value):
+        if value <= 0:
+            raise serializers.ValidationError("Max score must be greater than 0.")
+        return value
+
+    def validate(self, attrs):
+        course_id = self.context.get("course_id")
+        lesson = attrs.get("lesson")
+        if course_id and lesson and lesson.section.course_id != course_id:
+            raise serializers.ValidationError({"lesson": "Lesson must belong to this course."})
+        return attrs
+
     def create(self, validated_data):
         request = self.context.get("request")
         if request and hasattr(request, "user"):
@@ -56,3 +74,8 @@ class AssignmentSubmissionSerializer(serializers.ModelSerializer):
             "updated_at",
         )
         read_only_fields = ("id", "assignment", "student", "created_at", "updated_at")
+
+    def validate_score(self, value):
+        if value < 0:
+            raise serializers.ValidationError("Score cannot be negative.")
+        return value

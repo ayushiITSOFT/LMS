@@ -26,9 +26,15 @@ class Enrollment(models.Model):
         return f"{self.student} -> {self.course}"
 
     def get_total_lessons(self):
+        sections = getattr(self.course, "_prefetched_objects_cache", {}).get("sections")
+        if sections is not None:
+            return sum(len(getattr(section, "_prefetched_objects_cache", {}).get("lessons", [])) for section in sections)
         return Lesson.objects.filter(section__course=self.course).count()
 
     def get_completed_lessons(self):
+        progress = getattr(self, "_prefetched_objects_cache", {}).get("progress")
+        if progress is not None:
+            return sum(1 for item in progress if item.completed)
         return CourseProgress.objects.filter(enrollment=self, completed=True).count()
 
     def get_progress_percentage(self):
@@ -44,11 +50,16 @@ class Enrollment(models.Model):
         return self.get_completed_lessons() == total_lessons
 
     def get_section_progress(self, section):
-        total_lessons = section.lessons.count()
+        prefetched_lessons = getattr(section, "_prefetched_objects_cache", {}).get("lessons")
+        total_lessons = len(prefetched_lessons) if prefetched_lessons is not None else section.lessons.count()
         if total_lessons == 0:
             return {"completed": False, "progress_percentage": 0, "completed_lessons": 0, "total_lessons": 0}
 
-        completed_lessons = CourseProgress.objects.filter(enrollment=self, lesson__section=section, completed=True).count()
+        progress = getattr(self, "_prefetched_objects_cache", {}).get("progress")
+        if progress is not None:
+            completed_lessons = sum(1 for item in progress if item.completed and item.lesson.section_id == section.id)
+        else:
+            completed_lessons = CourseProgress.objects.filter(enrollment=self, lesson__section=section, completed=True).count()
         progress_percentage = round((completed_lessons / total_lessons) * 100, 2) if total_lessons else 0
         return {
             "completed": completed_lessons == total_lessons,
@@ -58,9 +69,21 @@ class Enrollment(models.Model):
         }
 
     def get_next_lesson(self):
-        lessons = Lesson.objects.filter(section__course=self.course).select_related("section").order_by("section__order", "order")
+        sections = getattr(self.course, "_prefetched_objects_cache", {}).get("sections")
+        if sections is not None:
+            lessons = [
+                lesson
+                for section in sorted(sections, key=lambda item: item.order)
+                for lesson in sorted(getattr(section, "_prefetched_objects_cache", {}).get("lessons", []), key=lambda item: item.order)
+            ]
+        else:
+            lessons = Lesson.objects.filter(section__course=self.course).select_related("section").order_by("section__order", "order")
+
+        progress = getattr(self, "_prefetched_objects_cache", {}).get("progress")
+        completed_lesson_ids = {item.lesson_id for item in progress if item.completed} if progress is not None else None
         for lesson in lessons:
-            if not CourseProgress.objects.filter(enrollment=self, lesson=lesson, completed=True).exists():
+            completed = lesson.id in completed_lesson_ids if completed_lesson_ids is not None else CourseProgress.objects.filter(enrollment=self, lesson=lesson, completed=True).exists()
+            if not completed:
                 return lesson
         return None
 

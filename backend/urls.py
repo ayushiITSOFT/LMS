@@ -13,4 +13,9 @@ urlpatterns = [
     path("assignment/", include(("assignment.urls", "assignment"), namespace="assignment")),
     path("certificate/", include(("certificate.urls", "certificate"), namespace="certificate")),
     path("reviews/", include(("reviews.urls", "reviews"), namespace="reviews")),
+    path("notifications/", include(("notifications.urls", "notifications"), namespace="notifications")),
+    path("analytics/", include(("analytics.urls", "analytics"), namespace="analytics")),
+    path("announcements/", include(("announcements.urls", "announcements"), namespace="announcements")),
+    path("files/", include(("file_management.urls", "file_management"), namespace="file_management")),
+    path("audit-logs/", include(("audit_logs.urls", "audit_logs"), namespace="audit_logs")),
 ]

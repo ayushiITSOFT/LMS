@@ -30,7 +30,7 @@ class WishlistDeleteView(generics.DestroyAPIView):
     def get_queryset(self):
         if not is_student(self.request.user):
             return Wishlist.objects.none()
-        return Wishlist.objects.filter(student=self.request.user)
+        return Wishlist.objects.filter(student=self.request.user).select_related("course")
 
     def delete(self, request, *args, **kwargs):
         course = get_object_or_404(Course, pk=kwargs.get("course_pk"))

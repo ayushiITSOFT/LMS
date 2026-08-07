@@ -13,7 +13,7 @@ class CourseReviewListCreateView(generics.ListCreateAPIView):
 
     def get_queryset(self):
         course = get_object_or_404(Course, pk=self.kwargs.get("course_pk"))
-        return CourseReview.objects.filter(course=course)
+        return CourseReview.objects.filter(course=course).select_related("course", "student", "enrollment")
 
     def perform_create(self, serializer):
         course = get_object_or_404(Course, pk=self.kwargs.get("course_pk"))
@@ -26,4 +26,4 @@ class CourseReviewDetailView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = (permissions.IsAuthenticated,)
 
     def get_queryset(self):
-        return CourseReview.objects.filter(student=self.request.user)
+        return CourseReview.objects.filter(student=self.request.user).select_related("course", "student", "enrollment")

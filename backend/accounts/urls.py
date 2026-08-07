@@ -1,6 +1,6 @@
 from django.urls import path
 
-from .views import LoginView, LogoutView, RefreshTokenView, RegisterView
+from .views import AdminDashboardView, LoginView, LogoutView, RefreshTokenView, RegisterView
 
 
 app_name = "accounts"
@@ -10,4 +10,5 @@ urlpatterns = [
     path("login/", LoginView.as_view(), name="login"),
     path("logout/", LogoutView.as_view(), name="logout"),
     path("refresh/", RefreshTokenView.as_view(), name="refresh"),
+    path("admin/dashboard/", AdminDashboardView.as_view(), name="admin-dashboard"),
 ]

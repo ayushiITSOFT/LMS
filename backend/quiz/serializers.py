@@ -10,12 +10,24 @@ class QuizOptionSerializer(serializers.ModelSerializer):
         fields = ("id", "text", "is_correct", "order", "created_at", "updated_at")
         read_only_fields = ("id", "created_at", "updated_at")
 
+    def validate_text(self, value):
+        value = value.strip()
+        if not value:
+            raise serializers.ValidationError("Text is required.")
+        return value
+
 
 class QuizOptionCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = QuizOption
         fields = ("id", "text", "is_correct", "order", "created_at", "updated_at")
         read_only_fields = ("id", "created_at", "updated_at")
+
+    def validate_text(self, value):
+        value = value.strip()
+        if not value:
+            raise serializers.ValidationError("Text is required.")
+        return value
 
 
 class QuizQuestionSerializer(serializers.ModelSerializer):
@@ -26,12 +38,24 @@ class QuizQuestionSerializer(serializers.ModelSerializer):
         fields = ("id", "text", "question_type", "order", "options", "created_at", "updated_at")
         read_only_fields = ("id", "created_at", "updated_at")
 
+    def validate_text(self, value):
+        value = value.strip()
+        if not value:
+            raise serializers.ValidationError("Text is required.")
+        return value
+
 
 class QuizQuestionCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = QuizQuestion
         fields = ("id", "text", "question_type", "order", "created_at", "updated_at")
         read_only_fields = ("id", "created_at", "updated_at")
+
+    def validate_text(self, value):
+        value = value.strip()
+        if not value:
+            raise serializers.ValidationError("Text is required.")
+        return value
 
 
 class QuizSerializer(serializers.ModelSerializer):
@@ -42,6 +66,19 @@ class QuizSerializer(serializers.ModelSerializer):
         model = Quiz
         fields = ("id", "course", "lesson", "title", "description", "status", "created_at", "updated_at")
         read_only_fields = ("id", "course", "created_at", "updated_at")
+
+    def validate_title(self, value):
+        value = value.strip()
+        if not value:
+            raise serializers.ValidationError("Title is required.")
+        return value
+
+    def validate(self, attrs):
+        course_id = self.context.get("course_id")
+        lesson = attrs.get("lesson")
+        if course_id and lesson and lesson.section.course_id != course_id:
+            raise serializers.ValidationError({"lesson": "Lesson must belong to this course."})
+        return attrs
 
     def create(self, validated_data):
         request = self.context.get("request")

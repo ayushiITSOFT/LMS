@@ -30,7 +30,7 @@ class CartItemDeleteView(generics.DestroyAPIView):
     def get_queryset(self):
         if not is_student(self.request.user):
             return CartItem.objects.none()
-        return CartItem.objects.filter(student=self.request.user)
+        return CartItem.objects.filter(student=self.request.user).select_related("course")
 
     def delete(self, request, *args, **kwargs):
         course = get_object_or_404(Course, pk=kwargs.get("course_pk"))

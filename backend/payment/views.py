@@ -7,12 +7,14 @@ from rest_framework.views import APIView
 
 from cart.models import CartItem
 from accounts.permissions import is_student
+from security.throttles import UserWriteRateThrottle
 from .models import Order, Payment
 from .serializers import PaymentProcessResponseSerializer
 
 
 class PaymentProcessView(APIView):
     permission_classes = (permissions.IsAuthenticated,)
+    throttle_classes = (UserWriteRateThrottle,)
 
     def post(self, request):
         if not is_student(request.user):

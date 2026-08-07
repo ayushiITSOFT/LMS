@@ -23,3 +23,9 @@ class CourseReviewSerializer(serializers.ModelSerializer):
         if value < 1 or value > 5:
             raise serializers.ValidationError("Rating must be between 1 and 5.")
         return value
+
+    def validate_title(self, value):
+        return value.strip()
+
+    def validate_comment(self, value):
+        return value.strip()

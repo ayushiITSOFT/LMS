@@ -3,6 +3,7 @@ from django.urls import path
 from .views import (
     CourseCreateView,
     CourseDiscoveryListView,
+    InstructorDashboardView,
     CoursePreviewView,
     CourseRetrieveUpdateDestroyView,
     CoursePublishView,
@@ -20,6 +21,7 @@ urlpatterns = [
     # Course endpoints
     path("", CourseCreateView.as_view(), name="create"),
     path("discover/", CourseDiscoveryListView.as_view(), name="discover"),
+    path("instructor/dashboard/", InstructorDashboardView.as_view(), name="instructor-dashboard"),
     path("<int:pk>/", CourseRetrieveUpdateDestroyView.as_view(), name="detail"),
     path("<int:pk>/publish/", CoursePublishView.as_view(), name="publish"),
     path("<int:pk>/preview/", CoursePreviewView.as_view(), name="preview"),

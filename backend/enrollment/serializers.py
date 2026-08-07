@@ -1,6 +1,8 @@
 from rest_framework import serializers
 
 from courses.models import Course, Section, Lesson
+from assignment.models import Assignment, AssignmentSubmission
+from certificate.models import Certificate
 from .models import Enrollment, CourseProgress
 
 
@@ -31,6 +33,9 @@ class LessonProgressSerializer(serializers.ModelSerializer):
         enrollment = self.context.get("enrollment")
         if not enrollment:
             return False
+        progress = getattr(enrollment, "_prefetched_objects_cache", {}).get("progress")
+        if progress is not None:
+            return any(item.lesson_id == obj.id and item.completed for item in progress)
         return CourseProgress.objects.filter(enrollment=enrollment, lesson=obj, completed=True).exists()
 
 
@@ -45,7 +50,7 @@ class SectionProgressSerializer(serializers.ModelSerializer):
 
     def get_lessons(self, obj):
         return LessonProgressSerializer(
-            obj.lessons.all().order_by("order"),
+            obj.lessons.all(),
             many=True,
             context={"enrollment": self.context.get("enrollment")},
         ).data
@@ -122,9 +127,35 @@ class MyCourseDetailSerializer(serializers.ModelSerializer):
         }
 
     def get_sections(self, obj):
-        sections = obj.course.sections.all().order_by("order")
+        sections = obj.course.sections.all()
         return SectionProgressSerializer(
             sections,
             many=True,
             context={"enrollment": obj},
         ).data
+
+
+class UpcomingDeadlineSerializer(serializers.Serializer):
+    assignment_id = serializers.IntegerField()
+    title = serializers.CharField()
+    course_id = serializers.IntegerField()
+    course_title = serializers.CharField()
+    due_date = serializers.DateTimeField()
+    status = serializers.CharField()
+
+
+class RecentActivitySerializer(serializers.Serializer):
+    type = serializers.CharField()
+    message = serializers.CharField()
+    timestamp = serializers.DateTimeField()
+    details = serializers.DictField(required=False)
+
+
+class StudentDashboardSerializer(serializers.Serializer):
+    total_enrolled_courses = serializers.IntegerField()
+    courses_in_progress = serializers.IntegerField()
+    completed_courses = serializers.IntegerField()
+    certificates_earned = serializers.IntegerField()
+    pending_assignments = serializers.IntegerField()
+    upcoming_deadlines = UpcomingDeadlineSerializer(many=True)
+    recent_activity = RecentActivitySerializer(many=True)

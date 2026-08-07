@@ -2,6 +2,8 @@ from decimal import Decimal
 
 from rest_framework import serializers
 
+from enrollment.models import Enrollment
+from file_management.validation import validate_upload
 from .models import Course, Section, Lesson
 
 
@@ -24,6 +26,15 @@ class LessonSerializer(serializers.ModelSerializer):
             "updated_at",
         )
         read_only_fields = ("id", "section", "created_at", "updated_at")
+
+    def validate_title(self, value):
+        value = value.strip()
+        if not value:
+            raise serializers.ValidationError("Title is required.")
+        return value
+
+    def validate_pdf(self, value):
+        return validate_upload(value, "pdf") if value else value
 
 
 class LessonPreviewSerializer(serializers.ModelSerializer):
@@ -60,6 +71,12 @@ class SectionSerializer(serializers.ModelSerializer):
             "updated_at",
         )
         read_only_fields = ("id", "course", "created_at", "updated_at")
+
+    def validate_title(self, value):
+        value = value.strip()
+        if not value:
+            raise serializers.ValidationError("Title is required.")
+        return value
 
 
 class SectionPreviewSerializer(serializers.ModelSerializer):
@@ -146,6 +163,21 @@ class CourseSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Price cannot be negative.")
         return value
 
+    def validate_thumbnail(self, value):
+        return validate_upload(value, "image") if value else value
+
+    def validate_title(self, value):
+        value = value.strip()
+        if not value:
+            raise serializers.ValidationError("Title is required.")
+        return value
+
+    def validate_category(self, value):
+        value = value.strip()
+        if not value:
+            raise serializers.ValidationError("Category is required.")
+        return value
+
     def validate(self, attrs):
         pricing = attrs.get("pricing")
         price = attrs.get("price")
@@ -185,6 +217,8 @@ class CourseSerializer(serializers.ModelSerializer):
 class CourseDiscoverySerializer(serializers.ModelSerializer):
     instructor = serializers.ReadOnlyField(source="instructor.username")
     is_paid = serializers.SerializerMethodField(read_only=True)
+    average_rating = serializers.FloatField(read_only=True)
+    review_count = serializers.IntegerField(read_only=True)
 
     class Meta:
         model = Course
@@ -199,6 +233,8 @@ class CourseDiscoverySerializer(serializers.ModelSerializer):
             "language",
             "price",
             "is_paid",
+            "average_rating",
+            "review_count",
             "status",
             "instructor",
             "created_at",
@@ -235,3 +271,26 @@ class CoursePreviewSerializer(serializers.ModelSerializer):
     def get_sections(self, course):
         preview_sections = course.sections.filter(lessons__preview=True).distinct().order_by("order")
         return SectionPreviewSerializer(preview_sections, many=True).data
+
+
+class RecentEnrollmentSerializer(serializers.ModelSerializer):
+    student_id = serializers.ReadOnlyField(source="student.id")
+    student_name = serializers.ReadOnlyField(source="student.username")
+    course_id = serializers.ReadOnlyField(source="course.id")
+    course_title = serializers.ReadOnlyField(source="course.title")
+
+    class Meta:
+        model = Enrollment
+        fields = ("id", "student_id", "student_name", "course_id", "course_title", "created_at")
+        read_only_fields = fields
+
+
+class InstructorDashboardSerializer(serializers.Serializer):
+    total_courses = serializers.IntegerField()
+    published_courses = serializers.IntegerField()
+    draft_courses = serializers.IntegerField()
+    total_students = serializers.IntegerField()
+    total_revenue = serializers.DecimalField(max_digits=12, decimal_places=2)
+    average_rating = serializers.FloatField()
+    total_reviews = serializers.IntegerField()
+    recent_enrollments = RecentEnrollmentSerializer(many=True)

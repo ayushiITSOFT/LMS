@@ -1,22 +1,30 @@
+from decimal import Decimal
+
 from django.core.exceptions import ValidationError
-from django.db.models import Q
+from django.db.models import Avg, Count, Sum
 from django.shortcuts import get_object_or_404
-from rest_framework import generics, permissions, status
+from rest_framework import filters, generics, permissions, status
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from .filters import CourseSearchFilter
 from .models import Course, Section, Lesson
 from .permissions import CanPreviewCourse
 from .serializers import (
     CourseSerializer,
     CourseDiscoverySerializer,
+    InstructorDashboardSerializer,
     CoursePreviewSerializer,
     LessonSerializer,
     LessonPreviewSerializer,
     SectionSerializer,
 )
-from accounts.permissions import CanCreateCourse, CanManageOwnCourse
+from accounts.permissions import CanCreateCourse, CanManageOwnCourse, is_instructor
+from audit_logs.models import AuditLog
+from audit_logs.services import log_admin_action, snapshot
+from enrollment.models import Enrollment
+from orders.models import Order, OrderItem
 
 
 class CourseDiscoveryPagination(PageNumberPagination):
@@ -39,46 +47,21 @@ class CourseDiscoveryListView(generics.ListAPIView):
     serializer_class = CourseDiscoverySerializer
     permission_classes = (permissions.AllowAny,)
     pagination_class = CourseDiscoveryPagination
+    filter_backends = (CourseSearchFilter, filters.OrderingFilter)
+    ordering = "-created_at"
+    ordering_fields = ("created_at", "updated_at", "price", "title", "average_rating")
 
     def get_queryset(self):
-        queryset = Course.objects.filter(status=Course.Status.PUBLISHED).select_related("instructor")
-
-        search = (self.request.query_params.get("search") or "").strip()
-        category = (self.request.query_params.get("category") or "").strip()
-        level = (self.request.query_params.get("level") or "").strip()
+        queryset = (
+            Course.objects.filter(status=Course.Status.PUBLISHED)
+            .select_related("instructor")
+            .annotate(average_rating=Avg("reviews__rating"), review_count=Count("reviews"))
+        )
         language = (self.request.query_params.get("language") or "").strip()
-        status_filter = (self.request.query_params.get("status") or "").strip()
-        price_min = self.request.query_params.get("price_min")
-        price_max = self.request.query_params.get("price_max")
         is_paid = self.request.query_params.get("is_paid")
-        ordering = (self.request.query_params.get("ordering") or self.request.query_params.get("sort") or "-created_at").strip()
-
-        if search:
-            queryset = queryset.filter(
-                Q(title__icontains=search)
-                | Q(subtitle__icontains=search)
-                | Q(description__icontains=search)
-                | Q(category__icontains=search)
-                | Q(language__icontains=search)
-            )
-
-        if category:
-            queryset = queryset.filter(category__icontains=category)
-
-        if level:
-            queryset = queryset.filter(level=level)
 
         if language:
             queryset = queryset.filter(language__icontains=language)
-
-        if status_filter:
-            queryset = queryset.filter(status=status_filter)
-
-        if price_min is not None and price_min != "":
-            queryset = queryset.filter(price__gte=price_min)
-
-        if price_max is not None and price_max != "":
-            queryset = queryset.filter(price__lte=price_max)
 
         if is_paid is not None and is_paid != "":
             if str(is_paid).lower() in {"1", "true", "yes"}:
@@ -86,25 +69,45 @@ class CourseDiscoveryListView(generics.ListAPIView):
             else:
                 queryset = queryset.filter(price=0)
 
-        allowed_orderings = {
-            "created_at": "created_at",
-            "-created_at": "-created_at",
-            "price": "price",
-            "-price": "-price",
-            "title": "title",
-            "-title": "-title",
-            "updated_at": "updated_at",
-            "-updated_at": "-updated_at",
-        }
-        queryset = queryset.order_by(allowed_orderings.get(ordering, "-created_at"))
-
         return queryset
+
+
+class InstructorDashboardView(APIView):
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def get(self, request):
+        if not is_instructor(request.user):
+            return Response({"detail": "Only instructors can access the dashboard."}, status=status.HTTP_403_FORBIDDEN)
+
+        courses = Course.objects.filter(instructor=request.user)
+        course_ids = courses.values_list("id", flat=True)
+        review_stats = courses.aggregate(
+            average_rating=Avg("reviews__rating"),
+            total_reviews=Count("reviews", distinct=True),
+        )
+        total_revenue = OrderItem.objects.filter(
+            course_id__in=course_ids,
+            order__status=Order.Status.PAID,
+        ).aggregate(total=Sum("price"))["total"] or Decimal("0.00")
+
+        data = {
+            "total_courses": courses.count(),
+            "published_courses": courses.filter(status=Course.Status.PUBLISHED).count(),
+            "draft_courses": courses.filter(status=Course.Status.DRAFT).count(),
+            "total_students": Enrollment.objects.filter(course_id__in=course_ids).values("student_id").distinct().count(),
+            "total_revenue": total_revenue,
+            "average_rating": round(review_stats["average_rating"] or 0, 2),
+            "total_reviews": review_stats["total_reviews"],
+            "recent_enrollments": Enrollment.objects.filter(course_id__in=course_ids).select_related("student", "course").order_by("-created_at")[:10],
+        }
+
+        return Response(InstructorDashboardSerializer(data).data, status=status.HTTP_200_OK)
 
 
 class CourseRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
     """Retrieve, update or delete a course. Update/Delete restricted to owner or admin."""
 
-    queryset = Course.objects.all()
+    queryset = Course.objects.select_related("instructor").prefetch_related("sections__lessons")
     serializer_class = CourseSerializer
 
     def get_permissions(self):
@@ -112,6 +115,16 @@ class CourseRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
         if self.request.method in ("PUT", "PATCH", "DELETE"):
             return [permissions.IsAuthenticated(), CanManageOwnCourse()]
         return [permissions.IsAuthenticated()]
+
+    def perform_update(self, serializer):
+        previous = snapshot(self.get_object())
+        instance = serializer.save()
+        log_admin_action(self.request.user, AuditLog.Action.UPDATE, instance, previous, snapshot(instance))
+
+    def perform_destroy(self, instance):
+        previous = snapshot(instance)
+        log_admin_action(self.request.user, AuditLog.Action.DELETE, instance, previous, None)
+        instance.delete()
 
 
 class CoursePublishView(APIView):
@@ -124,6 +137,7 @@ class CoursePublishView(APIView):
         self.check_object_permissions(request, course)
 
         try:
+            previous = snapshot(course)
             course.publish()
         except ValidationError as exc:
             return Response(
@@ -134,6 +148,7 @@ class CoursePublishView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+        log_admin_action(request.user, AuditLog.Action.PUBLISH, course, previous, snapshot(course))
         serializer = CourseSerializer(course, context={"request": request})
         return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -178,7 +193,7 @@ class SectionListCreateView(generics.ListCreateAPIView):
         course = self.get_course()
         # enforce owner/admin permission on the course
         self.check_object_permissions(self.request, course)
-        return course.sections.all().order_by("order")
+        return course.sections.prefetch_related("lessons").order_by("order")
 
     def perform_create(self, serializer):
         course = self.get_course()
@@ -194,10 +209,20 @@ class SectionDetailView(generics.RetrieveUpdateDestroyAPIView):
 
     def get_object(self):
         course = get_object_or_404(Course, pk=self.kwargs.get("course_pk"))
-        section = get_object_or_404(Section, pk=self.kwargs.get("pk"), course=course)
+        section = get_object_or_404(Section.objects.prefetch_related("lessons"), pk=self.kwargs.get("pk"), course=course)
         # enforce owner/admin permission on the course
         self.check_object_permissions(self.request, course)
         return section
+
+    def perform_update(self, serializer):
+        previous = snapshot(self.get_object())
+        instance = serializer.save()
+        log_admin_action(self.request.user, AuditLog.Action.UPDATE, instance, previous, snapshot(instance))
+
+    def perform_destroy(self, instance):
+        previous = snapshot(instance)
+        log_admin_action(self.request.user, AuditLog.Action.DELETE, instance, previous, None)
+        instance.delete()
 
 
 class LessonListCreateView(generics.ListCreateAPIView):
@@ -215,7 +240,7 @@ class LessonListCreateView(generics.ListCreateAPIView):
         section = self.get_section()
         # enforce owner/admin permission on the course
         self.check_object_permissions(self.request, section.course)
-        return section.lessons.all().order_by("order")
+        return section.lessons.select_related("section__course").order_by("order")
 
     def perform_create(self, serializer):
         section = self.get_section()
@@ -237,3 +262,13 @@ class LessonDetailView(generics.RetrieveUpdateDestroyAPIView):
         # enforce owner/admin permission on the course
         self.check_object_permissions(self.request, section.course)
         return lesson
+
+    def perform_update(self, serializer):
+        previous = snapshot(self.get_object())
+        instance = serializer.save()
+        log_admin_action(self.request.user, AuditLog.Action.UPDATE, instance, previous, snapshot(instance))
+
+    def perform_destroy(self, instance):
+        previous = snapshot(instance)
+        log_admin_action(self.request.user, AuditLog.Action.DELETE, instance, previous, None)
+        instance.delete()
