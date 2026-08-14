@@ -13,7 +13,7 @@ class Order(models.Model):
 
     student = models.ForeignKey(
         settings.AUTH_USER_MODEL,
-        related_name="orders",
+        related_name="payment_orders",
         on_delete=models.CASCADE,
     )
     total_amount = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal("0.00"))
