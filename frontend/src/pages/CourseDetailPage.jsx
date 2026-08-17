@@ -5,6 +5,7 @@ import { useAuth } from "../features/auth/useAuth.js";
 import { addToCart, listCart, removeFromCart } from "../features/cart/cartService.js";
 import { CoursePublishPanel } from "../features/courses/CoursePublishPanel.jsx";
 import { deleteCourse, getCourse } from "../features/courses/courseService.js";
+import { listEnrollments } from "../features/enrollment/enrollmentService.js";
 import {
   addToWishlist,
   listWishlist,
@@ -22,6 +23,7 @@ export function CourseDetailPage() {
   const [cartStatus, setCartStatus] = useState("ready");
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [wishlistStatus, setWishlistStatus] = useState("ready");
+  const [isEnrolled, setIsEnrolled] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -50,11 +52,12 @@ export function CourseDetailPage() {
 
     let active = true;
 
-    Promise.all([listCart(access), listWishlist(access)])
-      .then(([cartItems, wishlistItems]) => {
+    Promise.all([listCart(access), listWishlist(access), listEnrollments(access)])
+      .then(([cartItems, wishlistItems, enrollments]) => {
         if (!active) return;
         setIsInCart(cartItems.some((item) => Number(item.course) === Number(id)));
         setIsWishlisted(wishlistItems.some((item) => Number(item.course) === Number(id)));
+        setIsEnrolled(enrollments.some((item) => Number(item.course?.id || item.course) === Number(id)));
       })
       .catch(() => {
         if (!active) return;
@@ -137,6 +140,9 @@ export function CourseDetailPage() {
           <div className="actions">
             {canStudentActions ? (
               <>
+                {isEnrolled ? (
+                  <Link className="button-link" to={`/my-courses/${course.id}`}>Open course</Link>
+                ) : null}
                 <button
                   className="cart-button"
                   disabled={cartStatus === "loading"}

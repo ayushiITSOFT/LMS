@@ -96,49 +96,56 @@ export function CartPage() {
       {message ? <p className="form-error">{message}</p> : null}
       {cart.length === 0 ? <p className="page-message">Your cart is empty.</p> : null}
       {cart.length ? (
-        <div className="course-grid">
-          {cart.map((item) => {
-            const course = courseById.get(Number(item.course));
+        <>
+          <div className="actions">
+            <Link className="button-link" to="/checkout">
+              Checkout
+            </Link>
+          </div>
+          <div className="course-grid">
+            {cart.map((item) => {
+              const course = courseById.get(Number(item.course));
 
-            return (
-              <article className="course-card" key={item.id}>
-                <div>
-                  <small>{course?.category || `Course #${item.course}`}</small>
-                  <h2>{course?.title || "Cart course"}</h2>
-                  <p>{course?.subtitle || course?.description || "Course details require access."}</p>
-                </div>
-                <dl className="detail-list">
+              return (
+                <article className="course-card" key={item.id}>
                   <div>
-                    <dt>Price</dt>
-                    <dd>{course ? formatPrice(course.price) : "Unavailable"}</dd>
+                    <small>{course?.category || `Course #${item.course}`}</small>
+                    <h2>{course?.title || "Cart course"}</h2>
+                    <p>{course?.subtitle || course?.description || "Course details require access."}</p>
                   </div>
-                  <div>
-                    <dt>Level</dt>
-                    <dd>{course?.level || "Not set"}</dd>
+                  <dl className="detail-list">
+                    <div>
+                      <dt>Price</dt>
+                      <dd>{course ? formatPrice(course.price) : "Unavailable"}</dd>
+                    </div>
+                    <div>
+                      <dt>Level</dt>
+                      <dd>{course?.level || "Not set"}</dd>
+                    </div>
+                    <div>
+                      <dt>Added</dt>
+                      <dd>{new Date(item.created_at).toLocaleDateString()}</dd>
+                    </div>
+                  </dl>
+                  <div className="course-card-footer">
+                    <span>{course ? "Ready in cart" : "Saved cart item"}</span>
+                    <div className="actions">
+                      <button
+                        className="danger-button"
+                        disabled={removingId === item.course}
+                        onClick={() => handleRemove(item.course)}
+                        type="button"
+                      >
+                        Remove
+                      </button>
+                      <Link to={`/courses/${item.course}`}>Details</Link>
+                    </div>
                   </div>
-                  <div>
-                    <dt>Added</dt>
-                    <dd>{new Date(item.created_at).toLocaleDateString()}</dd>
-                  </div>
-                </dl>
-                <div className="course-card-footer">
-                  <span>{course ? "Ready in cart" : "Saved cart item"}</span>
-                  <div className="actions">
-                    <button
-                      className="danger-button"
-                      disabled={removingId === item.course}
-                      onClick={() => handleRemove(item.course)}
-                      type="button"
-                    >
-                      Remove
-                    </button>
-                    <Link to={`/courses/${item.course}`}>Details</Link>
-                  </div>
-                </div>
-              </article>
-            );
-          })}
-        </div>
+                </article>
+              );
+            })}
+          </div>
+        </>
       ) : null}
     </section>
   );

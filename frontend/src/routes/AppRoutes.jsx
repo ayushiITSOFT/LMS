@@ -5,15 +5,21 @@ import { AppLayout } from "../layouts/AppLayout.jsx";
 import { AdminRoleTestPage } from "../pages/AdminRoleTestPage.jsx";
 import { AuthTestPage } from "../pages/AuthTestPage.jsx";
 import { CartPage } from "../pages/CartPage.jsx";
+import { CheckoutPage } from "../pages/CheckoutPage.jsx";
 import { CourseCreatePage } from "../pages/CourseCreatePage.jsx";
 import { CourseBuilderPage } from "../pages/CourseBuilderPage.jsx";
 import { CourseDetailPage } from "../pages/CourseDetailPage.jsx";
 import { CourseEditPage } from "../pages/CourseEditPage.jsx";
 import { CourseListPage } from "../pages/CourseListPage.jsx";
 import { CoursePreviewPage } from "../pages/CoursePreviewPage.jsx";
+import { EnrollmentDetailPage } from "../pages/EnrollmentDetailPage.jsx";
+import { EnrollmentListPage } from "../pages/EnrollmentListPage.jsx";
 import { HomePage } from "../pages/HomePage.jsx";
 import { InstructorRoleTestPage } from "../pages/InstructorRoleTestPage.jsx";
 import { LoginPage } from "../pages/LoginPage.jsx";
+import { OrderDetailPage } from "../pages/OrderDetailPage.jsx";
+import { OrderListPage } from "../pages/OrderListPage.jsx";
+import { PaymentPage } from "../pages/PaymentPage.jsx";
 import { RegisterPage } from "../pages/RegisterPage.jsx";
 import { StudentRoleTestPage } from "../pages/StudentRoleTestPage.jsx";
 import { UnauthorizedPage } from "../pages/UnauthorizedPage.jsx";
@@ -46,6 +52,14 @@ export function AppRoutes() {
         </Route>
         <Route element={<ProtectedRoute allowedRoles={[ROLES.STUDENT]} />}>
           <Route path="cart" element={<CartPage />} />
+          <Route path="checkout" element={<CheckoutPage />} />
+          <Route path="enrollment" element={<EnrollmentListPage />} />
+          <Route path="enrollment/:id" element={<EnrollmentDetailPage />} />
+          <Route path="my-courses" element={<EnrollmentListPage />} />
+          <Route path="my-courses/:id" element={<EnrollmentDetailPage />} />
+          <Route path="orders" element={<OrderListPage />} />
+          <Route path="orders/:id" element={<OrderDetailPage />} />
+          <Route path="payment" element={<PaymentPage />} />
           <Route path="role-test/student" element={<StudentRoleTestPage />} />
           <Route path="wishlist" element={<WishlistPage />} />
         </Route>

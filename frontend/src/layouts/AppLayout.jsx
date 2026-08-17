@@ -32,6 +32,8 @@ export function AppLayout() {
               {role === ROLES.STUDENT ? (
                 <>
                   <Link to="/cart">Cart</Link>
+                  <Link to="/orders">Orders</Link>
+                  <Link to="/my-courses">My Courses</Link>
                   <Link to="/wishlist">Wishlist</Link>
                   <Link to="/role-test/student">Student</Link>
                 </>
