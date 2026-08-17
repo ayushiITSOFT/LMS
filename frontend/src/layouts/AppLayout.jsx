@@ -30,7 +30,11 @@ export function AppLayout() {
                 <Link to="/role-test/instructor">Instructor</Link>
               ) : null}
               {role === ROLES.STUDENT ? (
-                <Link to="/role-test/student">Student</Link>
+                <>
+                  <Link to="/cart">Cart</Link>
+                  <Link to="/wishlist">Wishlist</Link>
+                  <Link to="/role-test/student">Student</Link>
+                </>
               ) : null}
               <span className="role-label">{ROLE_LABELS[role] || "Invalid role"}</span>
               <button type="button" onClick={handleLogout}>

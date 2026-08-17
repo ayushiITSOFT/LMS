@@ -4,6 +4,7 @@ import { ROLES } from "../features/auth/roles.js";
 import { AppLayout } from "../layouts/AppLayout.jsx";
 import { AdminRoleTestPage } from "../pages/AdminRoleTestPage.jsx";
 import { AuthTestPage } from "../pages/AuthTestPage.jsx";
+import { CartPage } from "../pages/CartPage.jsx";
 import { CourseCreatePage } from "../pages/CourseCreatePage.jsx";
 import { CourseBuilderPage } from "../pages/CourseBuilderPage.jsx";
 import { CourseDetailPage } from "../pages/CourseDetailPage.jsx";
@@ -16,6 +17,7 @@ import { LoginPage } from "../pages/LoginPage.jsx";
 import { RegisterPage } from "../pages/RegisterPage.jsx";
 import { StudentRoleTestPage } from "../pages/StudentRoleTestPage.jsx";
 import { UnauthorizedPage } from "../pages/UnauthorizedPage.jsx";
+import { WishlistPage } from "../pages/WishlistPage.jsx";
 
 export function AppRoutes() {
   return (
@@ -43,7 +45,9 @@ export function AppRoutes() {
           <Route path="role-test/instructor" element={<InstructorRoleTestPage />} />
         </Route>
         <Route element={<ProtectedRoute allowedRoles={[ROLES.STUDENT]} />}>
+          <Route path="cart" element={<CartPage />} />
           <Route path="role-test/student" element={<StudentRoleTestPage />} />
+          <Route path="wishlist" element={<WishlistPage />} />
         </Route>
       </Route>
     </Routes>
