@@ -22,12 +22,24 @@ export function getCourse(id, token) {
   return apiClient.get(`courses/${id}/`, { headers: authHeader(token) });
 }
 
+export function getCoursePreview(id, token) {
+  return apiClient.get(`courses/${id}/preview/`, { headers: authHeader(token) });
+}
+
 export function createCourse(values, token) {
   return apiClient.post("courses/", values, { headers: authHeader(token) });
 }
 
 export function updateCourse(id, values, token) {
   return apiClient.patch(`courses/${id}/`, values, { headers: authHeader(token) });
+}
+
+export function updateCoursePricing(id, values, token) {
+  return updateCourse(id, values, token);
+}
+
+export function publishCourse(id, token) {
+  return apiClient.post(`courses/${id}/publish/`, {}, { headers: authHeader(token) });
 }
 
 export function deleteCourse(id, token) {

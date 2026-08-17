@@ -13,6 +13,8 @@ const initialValues = {
   description: "",
   level: "beginner",
   language: "English",
+  pricing: "free",
+  price: "0.00",
 };
 
 function fieldError(errors, name) {
@@ -29,12 +31,19 @@ export function CourseForm({
   const [values, setValues] = useState({
     ...initialValues,
     ...initialCourse,
+    pricing: Number(initialCourse?.price || 0) > 0 ? "paid" : "free",
+    price: initialCourse?.price ?? initialValues.price,
   });
   const [localErrors, setLocalErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
 
   function updateField(event) {
-    setValues({ ...values, [event.target.name]: event.target.value });
+    const { name, value } = event.target;
+    setValues({
+      ...values,
+      [name]: value,
+      ...(name === "pricing" && value === "free" ? { price: "0.00" } : {}),
+    });
   }
 
   async function handleSubmit(event) {
@@ -43,6 +52,7 @@ export function CourseForm({
       category: !values.category.trim() ? "Category is required." : "",
       title: !values.title.trim() ? "Title is required." : "",
       language: !values.language.trim() ? "Language is required." : "",
+      price: priceError(values),
     };
 
     if (Object.values(nextErrors).some(Boolean)) {
@@ -61,6 +71,8 @@ export function CourseForm({
         description: values.description.trim(),
         level: values.level,
         language: values.language.trim(),
+        pricing: values.pricing,
+        price: values.pricing === "free" ? "0.00" : values.price,
       });
     } finally {
       setSubmitting(false);
@@ -139,9 +151,48 @@ export function CourseForm({
           <span className="field-error">{fieldError(mergedErrors, "language")}</span>
         ) : null}
       </label>
+      <label>
+        Pricing
+        <select name="pricing" onChange={updateField} value={values.pricing}>
+          <option value="free">Free</option>
+          <option value="paid">Paid</option>
+        </select>
+        {fieldError(mergedErrors, "pricing") ? (
+          <span className="field-error">{fieldError(mergedErrors, "pricing")}</span>
+        ) : null}
+      </label>
+      <label>
+        Price
+        <input
+          disabled={values.pricing === "free"}
+          min="0"
+          name="price"
+          onChange={updateField}
+          step="0.01"
+          type="number"
+          value={values.price}
+        />
+        {fieldError(mergedErrors, "price") ? (
+          <span className="field-error">{fieldError(mergedErrors, "price")}</span>
+        ) : null}
+      </label>
       <button type="submit" disabled={submitting}>
         {submitting ? "Saving..." : submitLabel}
       </button>
     </form>
   );
+}
+
+function priceError(values) {
+  const price = Number(values.price);
+
+  if (Number.isNaN(price) || price < 0) {
+    return "Price must be zero or greater.";
+  }
+
+  if (values.pricing === "paid" && price <= 0) {
+    return "Paid courses must have a price greater than 0.";
+  }
+
+  return "";
 }

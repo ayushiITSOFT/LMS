@@ -72,7 +72,10 @@ export function CourseListPage() {
                 <h2>{course.title}</h2>
                 <p>{course.subtitle || course.description || "No description provided."}</p>
                 <small>
-                  {course.category} · {course.level} · {course.language}
+                  {course.category} · {course.level} · {course.language} ·{" "}
+                  {Number(course.price || 0) > 0
+                    ? `$${Number(course.price).toFixed(2)}`
+                    : "Free"}
                 </small>
               </div>
               <Link to={`/courses/${course.id}`}>View</Link>

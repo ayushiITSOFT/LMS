@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useAuth } from "../features/auth/useAuth.js";
+import { CoursePublishPanel } from "../features/courses/CoursePublishPanel.jsx";
 import {
   createLesson,
   createSection,
@@ -9,6 +10,7 @@ import {
   getCourse,
   updateLesson,
   updateSection,
+  updateCoursePricing,
 } from "../features/courses/courseService.js";
 
 const emptySection = { title: "", description: "", order: "" };
@@ -21,6 +23,10 @@ const emptyLesson = {
   order: "",
   pdf: null,
 };
+
+function formatPrice(price) {
+  return Number(price || 0) > 0 ? `$${Number(price).toFixed(2)}` : "Free";
+}
 
 function fieldError(errors, name) {
   const value = errors?.[name];
@@ -180,6 +186,77 @@ function LessonForm({ errors, initialValues = emptyLesson, onSubmit, submitLabel
   );
 }
 
+function PricingForm({ course, errors, onSubmit }) {
+  const [values, setValues] = useState({
+    pricing: Number(course.price || 0) > 0 ? "paid" : "free",
+    price: course.price || "0.00",
+  });
+  const [localError, setLocalError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  function updateField(event) {
+    const { name, value } = event.target;
+    setValues({
+      ...values,
+      [name]: value,
+      ...(name === "pricing" && value === "free" ? { price: "0.00" } : {}),
+    });
+  }
+
+  async function handleSubmit(event) {
+    event.preventDefault();
+    const price = Number(values.price);
+
+    if (Number.isNaN(price) || price < 0) {
+      setLocalError("Price must be zero or greater.");
+      return;
+    }
+
+    if (values.pricing === "paid" && price <= 0) {
+      setLocalError("Paid courses must have a price greater than 0.");
+      return;
+    }
+
+    setLocalError("");
+    setSubmitting(true);
+    try {
+      await onSubmit({
+        pricing: values.pricing,
+        price: values.pricing === "free" ? "0.00" : values.price,
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <form className="builder-form pricing-form" onSubmit={handleSubmit}>
+      <select aria-label="Pricing" name="pricing" onChange={updateField} value={values.pricing}>
+        <option value="free">Free</option>
+        <option value="paid">Paid</option>
+      </select>
+      <input
+        aria-label="Price"
+        disabled={values.pricing === "free"}
+        min="0"
+        name="price"
+        onChange={updateField}
+        step="0.01"
+        type="number"
+        value={values.price}
+      />
+      {fieldError({ ...errors, price: localError || errors.price }, "price") ? (
+        <span className="field-error">
+          {fieldError({ ...errors, price: localError || errors.price }, "price")}
+        </span>
+      ) : null}
+      <button disabled={submitting} type="submit">
+        {submitting ? "Saving..." : "Save pricing"}
+      </button>
+    </form>
+  );
+}
+
 export function CourseBuilderPage() {
   const { id } = useParams();
   const { access } = useAuth();
@@ -188,6 +265,7 @@ export function CourseBuilderPage() {
   const [editingLesson, setEditingLesson] = useState(null);
   const [errors, setErrors] = useState({});
   const [message, setMessage] = useState("");
+  const [messageType, setMessageType] = useState("error");
   const [status, setStatus] = useState("loading");
 
   const loadCourse = useCallback(async () => {
@@ -199,6 +277,7 @@ export function CourseBuilderPage() {
       setStatus("ready");
     } catch (error) {
       setMessage(error.message || "Unable to load course builder.");
+      setMessageType("error");
       setStatus("error");
     }
   }, [access, id]);
@@ -220,6 +299,22 @@ export function CourseBuilderPage() {
     } catch (error) {
       setErrors(error.data || {});
       setMessage(error.message || "Unable to save section.");
+      setMessageType("error");
+    }
+  }
+
+  async function submitPricing(values) {
+    setErrors({});
+    setMessage("");
+    try {
+      await updateCoursePricing(id, values, access);
+      await loadCourse();
+      setMessage("Pricing saved.");
+      setMessageType("success");
+    } catch (error) {
+      setErrors(error.data || {});
+      setMessage(error.message || "Unable to save pricing.");
+      setMessageType("error");
     }
   }
 
@@ -236,6 +331,7 @@ export function CourseBuilderPage() {
     } catch (error) {
       setErrors(error.data || {});
       setMessage(error.message || "Unable to save lesson.");
+      setMessageType("error");
     }
   }
 
@@ -243,6 +339,7 @@ export function CourseBuilderPage() {
     if (!window.confirm("Delete this section?")) return;
     await deleteSection(id, sectionId, access).then(loadCourse).catch((error) => {
       setMessage(error.message || "Unable to delete section.");
+      setMessageType("error");
     });
   }
 
@@ -250,6 +347,7 @@ export function CourseBuilderPage() {
     if (!window.confirm("Delete this lesson?")) return;
     await deleteLesson(id, sectionId, lessonId, access).then(loadCourse).catch((error) => {
       setMessage(error.message || "Unable to delete lesson.");
+      setMessageType("error");
     });
   }
 
@@ -266,8 +364,17 @@ export function CourseBuilderPage() {
         <Link className="button-link" to={`/courses/${id}`}>
           Course detail
         </Link>
+        <Link className="button-link" to={`/courses/${id}/preview`}>
+          Preview
+        </Link>
       </div>
-      {message ? <p className="form-error">{message}</p> : null}
+      {message ? <p className={messageType === "success" ? "form-success" : "form-error"}>{message}</p> : null}
+      <CoursePublishPanel course={course} onPublished={setCourse} token={access} />
+      <section className="builder-panel">
+        <h2>Pricing</h2>
+        <p className="page-message">Current price: {formatPrice(course.price)}</p>
+        <PricingForm course={course} errors={errors} onSubmit={submitPricing} />
+      </section>
       <section className="builder-panel">
         <h2>{editingSection ? "Edit section" : "Add section"}</h2>
         <SectionForm

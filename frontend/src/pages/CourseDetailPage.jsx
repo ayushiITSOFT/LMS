@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { ROLES } from "../features/auth/roles.js";
 import { useAuth } from "../features/auth/useAuth.js";
+import { CoursePublishPanel } from "../features/courses/CoursePublishPanel.jsx";
 import { deleteCourse, getCourse } from "../features/courses/courseService.js";
 
 export function CourseDetailPage() {
@@ -71,6 +72,9 @@ export function CourseDetailPage() {
             <Link className="button-link" to={`/courses/${course.id}/builder`}>
               Builder
             </Link>
+            <Link className="button-link" to={`/courses/${course.id}/preview`}>
+              Preview
+            </Link>
             <button className="danger-button" onClick={handleDelete} type="button">
               Delete
             </button>
@@ -95,8 +99,15 @@ export function CourseDetailPage() {
           <dt>Status</dt>
           <dd>{course.status}</dd>
         </div>
+        <div>
+          <dt>Price</dt>
+          <dd>{Number(course.price || 0) > 0 ? `$${Number(course.price).toFixed(2)}` : "Free"}</dd>
+        </div>
       </dl>
       <p>{course.description || "No description provided."}</p>
+      {canManage ? (
+        <CoursePublishPanel course={course} onPublished={setCourse} token={access} />
+      ) : null}
     </section>
   );
 }

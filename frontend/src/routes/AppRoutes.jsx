@@ -9,6 +9,7 @@ import { CourseBuilderPage } from "../pages/CourseBuilderPage.jsx";
 import { CourseDetailPage } from "../pages/CourseDetailPage.jsx";
 import { CourseEditPage } from "../pages/CourseEditPage.jsx";
 import { CourseListPage } from "../pages/CourseListPage.jsx";
+import { CoursePreviewPage } from "../pages/CoursePreviewPage.jsx";
 import { HomePage } from "../pages/HomePage.jsx";
 import { InstructorRoleTestPage } from "../pages/InstructorRoleTestPage.jsx";
 import { LoginPage } from "../pages/LoginPage.jsx";
@@ -33,6 +34,7 @@ export function AppRoutes() {
           <Route path="courses/new" element={<CourseCreatePage />} />
           <Route path="courses/:id/builder" element={<CourseBuilderPage />} />
           <Route path="courses/:id/edit" element={<CourseEditPage />} />
+          <Route path="courses/:id/preview" element={<CoursePreviewPage />} />
         </Route>
         <Route element={<ProtectedRoute allowedRoles={[ROLES.ADMIN]} />}>
           <Route path="role-test/admin" element={<AdminRoleTestPage />} />
