@@ -4,6 +4,7 @@ from django.core.exceptions import ValidationError
 from django.db.models import Avg, Count, Sum
 from django.shortcuts import get_object_or_404
 from rest_framework import filters, generics, permissions, status
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -20,7 +21,7 @@ from .serializers import (
     LessonPreviewSerializer,
     SectionSerializer,
 )
-from accounts.permissions import CanCreateCourse, CanManageOwnCourse, is_instructor
+from accounts.permissions import CanCreateCourse, CanManageOwnCourse, is_admin, is_instructor, is_student
 from audit_logs.models import AuditLog
 from audit_logs.services import log_admin_action, snapshot
 from enrollment.models import Enrollment
@@ -115,6 +116,18 @@ class CourseRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
         if self.request.method in ("PUT", "PATCH", "DELETE"):
             return [permissions.IsAuthenticated(), CanManageOwnCourse()]
         return [permissions.IsAuthenticated()]
+
+    def get_object(self):
+        course = super().get_object()
+        if self.request.method not in permissions.SAFE_METHODS:
+            return course
+
+        user = self.request.user
+        if is_admin(user) or (is_instructor(user) and course.instructor_id == user.id):
+            return course
+        if is_student(user) and Enrollment.objects.filter(student=user, course=course).exists():
+            return course
+        raise PermissionDenied("You must be enrolled in this course to view its lessons.")
 
     def perform_update(self, serializer):
         previous = snapshot(self.get_object())

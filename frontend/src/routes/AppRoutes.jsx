@@ -12,6 +12,7 @@ import { CourseDetailPage } from "../pages/CourseDetailPage.jsx";
 import { CourseEditPage } from "../pages/CourseEditPage.jsx";
 import { CourseListPage } from "../pages/CourseListPage.jsx";
 import { CoursePreviewPage } from "../pages/CoursePreviewPage.jsx";
+import { AssignmentPage } from "../pages/AssignmentPage.jsx";
 import { EnrollmentDetailPage } from "../pages/EnrollmentDetailPage.jsx";
 import { EnrollmentListPage } from "../pages/EnrollmentListPage.jsx";
 import { HomePage } from "../pages/HomePage.jsx";
@@ -57,6 +58,8 @@ export function AppRoutes() {
           <Route path="enrollment/:id" element={<EnrollmentDetailPage />} />
           <Route path="my-courses" element={<EnrollmentListPage />} />
           <Route path="my-courses/:id" element={<EnrollmentDetailPage />} />
+          <Route path="my-courses/:courseId/assignments" element={<AssignmentPage />} />
+          <Route path="my-courses/:courseId/assignments/:assignmentId" element={<AssignmentPage />} />
           <Route path="orders" element={<OrderListPage />} />
           <Route path="orders/:id" element={<OrderDetailPage />} />
           <Route path="payment" element={<PaymentPage />} />

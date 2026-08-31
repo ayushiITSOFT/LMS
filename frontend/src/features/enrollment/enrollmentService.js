@@ -10,3 +10,21 @@ export function getEnrollment(courseId, token) {
     headers: authHeader(token),
   });
 }
+
+export function getResumeLesson(courseId, token) {
+  return apiClient.get(`enrollment/my-courses/${courseId}/resume/`, {
+    headers: authHeader(token),
+  });
+}
+
+export function completeLesson(courseId, lessonId, token) {
+  return apiClient.post(
+    `enrollment/my-courses/${courseId}/lessons/${lessonId}/complete/`,
+    {},
+    { headers: authHeader(token) }
+  );
+}
+
+export function getStudentDashboard(token) {
+  return apiClient.get("enrollment/dashboard/", { headers: authHeader(token) });
+}

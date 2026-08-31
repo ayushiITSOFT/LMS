@@ -474,6 +474,16 @@ select {
   color: #027a48;
 }
 
+.status-submitted {
+  background: #e7f0ff;
+  color: #1f6feb;
+}
+
+.status-graded {
+  background: #ede9fe;
+  color: #6d28d9;
+}
+
 .status-archived {
   background: #edf0f5;
   color: #4b5870;
@@ -519,6 +529,28 @@ select {
   color: #ffffff;
   cursor: pointer;
   font-weight: 700;
+}
+
+.learning-layout {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: minmax(12rem, 18rem) 1fr;
+}
+
+.lesson-button {
+  background: none;
+  border: 0;
+  cursor: pointer;
+  display: block;
+  padding: 0.45rem 0;
+  text-align: left;
+  width: 100%;
+}
+
+@media (max-width: 700px) {
+  .learning-layout {
+    grid-template-columns: 1fr;
+  }
 }
 
 .pricing-form {
@@ -627,6 +659,41 @@ select {
 .preview-content a {
   color: #1f6feb;
   font-weight: 700;
+}
+
+.assignment-layout .builder-panel {
+  align-content: start;
+}
+
+.assignment-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.assignment-header small {
+  color: #667085;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.assignment-section {
+  display: grid;
+  gap: 10px;
+}
+
+.assignment-section h3 {
+  margin: 0;
+}
+
+.assignment-form textarea {
+  min-height: 180px;
+  resize: vertical;
+}
+
+.assignment-form .actions {
+  justify-content: flex-start;
 }
 
 @media (max-width: 640px) {

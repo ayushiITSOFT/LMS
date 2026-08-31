@@ -141,7 +141,12 @@ export function CourseDetailPage() {
             {canStudentActions ? (
               <>
                 {isEnrolled ? (
-                  <Link className="button-link" to={`/my-courses/${course.id}`}>Open course</Link>
+                  <>
+                    <Link className="button-link" to={`/my-courses/${course.id}`}>Open course</Link>
+                    <Link className="button-link" to={`/my-courses/${course.id}/assignments`}>
+                      Assignments
+                    </Link>
+                  </>
                 ) : null}
                 <button
                   className="cart-button"

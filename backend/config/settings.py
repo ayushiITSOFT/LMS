@@ -1,8 +1,11 @@
 from pathlib import Path
 import os
+from dotenv import load_dotenv
+from datetime import timedelta  
+
+load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-
 SECRET_KEY = os.getenv(
     "SECRET_KEY",
     "django-insecure-change-this-in-production"
@@ -14,6 +17,19 @@ ALLOWED_HOSTS = [
     "127.0.0.1",
     "localhost",
 ]
+
+CSRF_TRUSTED_ORIGINS = [
+    "http://127.0.0.1:8000",
+    "http://localhost:8000",
+]
+
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(hours=1),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
+
+    "ROTATE_REFRESH_TOKENS": True,
+    "BLACKLIST_AFTER_ROTATION": True,
+}
 
 INSTALLED_APPS = [
     "django.contrib.admin",

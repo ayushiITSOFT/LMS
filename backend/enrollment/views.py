@@ -13,6 +13,7 @@ from quiz.models import QuizAttempt
 from .models import Enrollment, CourseProgress
 from .serializers import (
     EnrollmentSerializer,
+    LessonProgressSerializer,
     MyCourseDetailSerializer,
     MyCourseSummarySerializer,
     StudentDashboardSerializer,
@@ -90,6 +91,26 @@ class MyCourseResumeView(APIView):
                     status=status.HTTP_200_OK,
                 )
         return Response({"detail": "No lesson remaining."}, status=status.HTTP_200_OK)
+
+
+class MyCourseLessonView(APIView):
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def get(self, request, course_pk, lesson_pk):
+        if not is_student(request.user):
+            return Response({"detail": "Only students can view course lessons."}, status=status.HTTP_403_FORBIDDEN)
+
+        enrollment = get_object_or_404(
+            Enrollment.objects.filter(student=request.user).select_related("course").prefetch_related("progress"),
+            course_id=course_pk,
+        )
+        lesson = get_object_or_404(
+            Lesson.objects.select_related("section"),
+            pk=lesson_pk,
+            section__course=enrollment.course,
+        )
+        serializer = LessonProgressSerializer(lesson, context={"enrollment": enrollment})
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class StudentDashboardView(APIView):

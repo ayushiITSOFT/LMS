@@ -12,7 +12,7 @@ class EnrollmentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Enrollment
         fields = ("id", "course", "course_title", "order", "created_at")
-        read_only_fields = fields
+        read_only_fields = ("id", "course", "course_title", "order", "created_at")
 
 
 class CourseSummarySerializer(serializers.ModelSerializer):
