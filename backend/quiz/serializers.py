@@ -1,13 +1,12 @@
 from rest_framework import serializers
 
 from courses.models import Lesson
-from .models import Quiz, QuizOption, QuizQuestion, QuizAttempt
-
+from .models import Quiz, QuizAnswer, QuizAttempt, QuizOption, QuizQuestion
 
 class QuizOptionSerializer(serializers.ModelSerializer):
     class Meta:
         model = QuizOption
-        fields = ("id", "text", "is_correct", "order", "created_at", "updated_at")
+        fields = ("id", "text"  , "order", "created_at", "updated_at")
         read_only_fields = ("id", "created_at", "updated_at")
 
     def validate_text(self, value):
@@ -76,19 +75,21 @@ class QuizSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         course_id = self.context.get("course_id")
         lesson = attrs.get("lesson")
+
         if course_id and lesson and lesson.section.course_id != course_id:
             raise serializers.ValidationError({"lesson": "Lesson must belong to this course."})
         return attrs
 
     def create(self, validated_data):
-        request = self.context.get("request")
-        if request and hasattr(request, "user"):
-            course_id = self.context.get("course_id")
-            if course_id:
-                from courses.models import Course
+        course_id = self.context.get("course_id")    
+        # request = self.context.get("request")
+        # if request and hasattr(request, "user"):
+        #     course_id = self.context.get("course_id")
+        if course_id:
+            from courses.models import Course
 
-                course = Course.objects.get(pk=course_id)
-                validated_data["course"] = course
+            course = Course.objects.get(pk=course_id)
+            validated_data["course"] = course
         return super().create(validated_data)
 
 
@@ -105,4 +106,29 @@ class QuizAttemptSerializer(serializers.ModelSerializer):
     class Meta:
         model = QuizAttempt
         fields = ("id", "quiz", "student", "status", "score", "created_at", "updated_at")
-        read_only_fields = ("id", "student", "quiz", "created_at", "updated_at")
+        read_only_fields = ("id", "student", "status","score", "created_at", "updated_at")
+
+class QuizAnswerSerializer(serializers.ModelSerializer):
+    selected_options = serializers.PrimaryKeyRelatedField(
+        queryset=QuizOption.objects.all(),
+        many=True,
+        required=False,
+    )
+
+    class Meta:
+        model = QuizAnswer
+        fields = (
+            "id",
+            "attempt",
+            "question",
+            "selected_options",
+            "created_at",
+            "updated_at",
+        )
+        read_only_fields = (
+            "id",
+            "attempt",
+            "question",
+            "created_at",
+            "updated_at",
+        )        

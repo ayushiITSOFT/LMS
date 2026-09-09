@@ -112,7 +112,7 @@ class Lesson(models.Model):
     title = models.CharField(max_length=255)
     kind = models.CharField(max_length=20, choices=Kind.choices, default=Kind.VIDEO)
 
-    # Content fields (optional depending on kind)
+    # Content fields (optional depending on kind)   
     video_url = models.URLField(blank=True, null=True)
     pdf = models.FileField(upload_to="lessons/pdfs/", blank=True, null=True)
     notes = models.TextField(blank=True)

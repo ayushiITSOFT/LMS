@@ -76,3 +76,33 @@ class QuizAttempt(models.Model):
 
     def __str__(self):
         return f"{self.student} -> {self.quiz}"
+
+class QuizAnswer(models.Model):
+    attempt = models.ForeignKey(
+        QuizAttempt,
+        related_name="answers",
+        on_delete=models.CASCADE,
+    )
+    question = models.ForeignKey(
+        QuizQuestion,
+        related_name="answers",
+        on_delete=models.CASCADE,
+    )
+    selected_options = models.ManyToManyField(
+        QuizOption,
+        related_name="answers",
+        blank=True,
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["attempt", "question"],
+                name="unique_attempt_question_answer",
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.attempt} -> {self.question}"    

@@ -1,5 +1,5 @@
 from django.contrib.contenttypes.models import ContentType
-from django.db.models.signals import post_save
+from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
 
 from enrollment.models import Enrollment, CourseProgress
@@ -20,6 +20,16 @@ def _create_notification(recipient, verb, target=None, actor=None, data=None):
     if data is not None:
         kwargs["data"] = data
     Notification.objects.create(**kwargs)
+
+
+def _create_notification_once(recipient, verb, target=None, actor=None, data=None):
+    filters = {"recipient": recipient, "verb": verb}
+    if target is not None:
+        filters["target_content_type"] = ContentType.objects.get_for_model(target.__class__)
+        filters["target_object_id"] = getattr(target, "id", None)
+    if Notification.objects.filter(**filters).exists():
+        return
+    _create_notification(recipient, verb, target=target, actor=actor, data=data)
 
 
 @receiver(post_save, sender=Enrollment)
@@ -70,13 +80,22 @@ def certificate_created(sender, instance, created, **kwargs):
         )
 
 
+@receiver(pre_save, sender=Assignment)
+def assignment_before_save(sender, instance, **kwargs):
+    if instance.pk:
+        instance._previous_status = Assignment.objects.filter(pk=instance.pk).values_list("status", flat=True).first()
+    else:
+        instance._previous_status = None
+
+
 @receiver(post_save, sender=Assignment)
 def assignment_created(sender, instance, created, **kwargs):
-    # On assignment publish/creation, notify enrolled students (recipient=each student)
-    if created or instance.status == Assignment.Status.PUBLISHED if hasattr(Assignment, 'Status') else created:
+    # Notify enrolled students when an assignment becomes published.
+    previous_status = getattr(instance, "_previous_status", None)
+    if instance.status == Assignment.Status.PUBLISHED and (created or previous_status != Assignment.Status.PUBLISHED):
         enrollments = Enrollment.objects.filter(course=instance.course)
         for en in enrollments:
-            _create_notification(
+            _create_notification_once(
                 recipient=en.student,
                 verb=Notification.Type.ASSIGNMENT_DUE,
                 target=instance,
@@ -89,7 +108,7 @@ def assignment_created(sender, instance, created, **kwargs):
 def assignment_submission_saved(sender, instance, created, **kwargs):
     # If submission is graded, notify the student
     if not created and instance.status == AssignmentSubmission.Status.GRADED if hasattr(AssignmentSubmission, 'Status') else False:
-        _create_notification(
+        _create_notification_once(
             recipient=instance.student,
             verb=Notification.Type.ASSIGNMENT_GRADED,
             target=instance.assignment,
@@ -102,7 +121,7 @@ def assignment_submission_saved(sender, instance, created, **kwargs):
 def quiz_attempt_saved(sender, instance, created, **kwargs):
     # When a quiz attempt is submitted (status SUBMITTED), notify the student with result
     if instance.status == QuizAttempt.Status.SUBMITTED if hasattr(QuizAttempt, 'Status') else False:
-        _create_notification(
+        _create_notification_once(
             recipient=instance.student,
             verb=Notification.Type.QUIZ_RESULT,
             target=instance,

@@ -53,7 +53,7 @@ INSTALLED_APPS = [
     "courses",
     "enrollment",
     "file_management",
-    "notifications",
+    "notifications.apps.NotificationsConfig",
     "orders",
     "payment",
     "quiz",
