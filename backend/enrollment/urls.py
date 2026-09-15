@@ -19,9 +19,6 @@ urlpatterns = [
     path("dashboard/", StudentDashboardView.as_view(), name="dashboard"),
     path("my-courses/<int:course_pk>/resume/", MyCourseResumeView.as_view(), name="my-course-resume"),
     path("my-courses/<int:course_pk>/lessons/<int:lesson_pk>/", MyCourseLessonView.as_view(), name="my-course-lesson"),
-    path(
-        "my-courses/<int:course_pk>/lessons/<int:lesson_pk>/complete/",
-        LessonCompleteView.as_view(),
-        name="lesson-complete",
-    ),
+    path("my-courses/<int:course_pk>/lessons/<int:lesson_pk>/complete/",LessonCompleteView.as_view(),name="lesson-complete",),
+    
 ]

@@ -21,7 +21,7 @@ from .serializers import (
     LessonPreviewSerializer,
     SectionSerializer,
 )
-from accounts.permissions import CanCreateCourse, CanManageOwnCourse, is_admin, is_instructor, is_student
+from accounts.permissions import CanAccessLesson,CanCreateCourse, CanManageOwnCourse, is_admin, is_instructor, is_student
 from audit_logs.models import AuditLog
 from audit_logs.services import log_admin_action, snapshot
 from enrollment.models import Enrollment
@@ -262,26 +262,63 @@ class LessonListCreateView(generics.ListCreateAPIView):
 
 
 class LessonDetailView(generics.RetrieveUpdateDestroyAPIView):
-    """Retrieve, update or delete a lesson. Only course owner/admin may manage."""
+    """Retrieve, update or delete a lesson."""
 
     serializer_class = LessonSerializer
-    permission_classes = (permissions.IsAuthenticated, CanManageOwnCourse)
+
+    def get_permissions(self):
+        if self.request.method == "GET":
+            return [
+                permissions.IsAuthenticated(),
+                CanAccessLesson(),
+            ]
+
+        return [
+            permissions.IsAuthenticated(),
+            CanManageOwnCourse(),
+        ]
 
     def get_object(self):
         section = get_object_or_404(
-            Section, pk=self.kwargs.get("section_pk"), course_id=self.kwargs.get("course_pk")
+            Section,
+            pk=self.kwargs.get("section_pk"),
+            course_id=self.kwargs.get("course_pk"),
         )
-        lesson = get_object_or_404(Lesson, pk=self.kwargs.get("pk"), section=section)
-        # enforce owner/admin permission on the course
-        self.check_object_permissions(self.request, section.course)
+
+        lesson = get_object_or_404(
+            Lesson,
+            pk=self.kwargs.get("pk"),
+            section=section,
+        )
+
+        if self.request.method == "GET":
+            self.check_object_permissions(self.request, lesson)
+        else:
+            self.check_object_permissions(self.request, section.course)
+
         return lesson
 
     def perform_update(self, serializer):
         previous = snapshot(self.get_object())
         instance = serializer.save()
-        log_admin_action(self.request.user, AuditLog.Action.UPDATE, instance, previous, snapshot(instance))
+
+        log_admin_action(
+            self.request.user,
+            AuditLog.Action.UPDATE,
+            instance,
+            previous,
+            snapshot(instance),
+        )
 
     def perform_destroy(self, instance):
         previous = snapshot(instance)
-        log_admin_action(self.request.user, AuditLog.Action.DELETE, instance, previous, None)
+
+        log_admin_action(
+            self.request.user,
+            AuditLog.Action.DELETE,
+            instance,
+            previous,
+            None,
+        )
+
         instance.delete()

@@ -1,4 +1,6 @@
 from rest_framework import permissions
+from enrollment.models import Enrollment
+    
 
 
 ADMIN = "admin"
@@ -54,6 +56,32 @@ class CanManageOwnCourse(permissions.BasePermission):
         owner = getattr(obj, "instructor", None) or getattr(obj, "owner", None)
         return is_instructor(request.user) and owner == request.user
 
+class CanAccessLesson(permissions.BasePermission):
+    """
+    Admins and course instructors can access lessons.
+    Students can access lessons only if they are enrolled in the course.
+    """
+
+    def has_permission(self, request, view):
+        return request.user.is_authenticated
+
+    def has_object_permission(self, request, view, obj):
+        course = obj.section.course
+
+        if is_admin(request.user):
+            return True
+
+        if is_instructor(request.user):
+            owner = getattr(course, "instructor", None) or getattr(course, "owner", None)
+            return owner == request.user
+
+        if is_student(request.user):
+            return Enrollment.objects.filter(
+                student=request.user,
+                course=course,
+            ).exists()
+
+        return False
 
 class CanEditOwnCourse(CanManageOwnCourse):
     pass
