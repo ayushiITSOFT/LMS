@@ -16,6 +16,7 @@ DEBUG = os.getenv("DEBUG", "True").lower() in ("true", "1", "yes")
 ALLOWED_HOSTS = [
     "127.0.0.1",
     "localhost",
+    "lms-ujqv.onrender.com",
 ]
 
 CSRF_TRUSTED_ORIGINS = [
