@@ -2,88 +2,94 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../features/auth/useAuth.js";
 import { listOrders } from "../features/orders/orderService.js";
+import { Skeleton } from "../components/Skeleton.jsx";
+import { EmptyState } from "../components/EmptyState.jsx";
+import { ErrorState } from "../components/ErrorState.jsx";
+import { StatusBadge } from "../components/StatusBadge.jsx";
+import { DataTable } from "../components/DataTable.jsx";
 
 function itemsFrom(response) {
   return Array.isArray(response) ? response : response?.results || [];
 }
 
-function formatMoney(amount) {
-  return `USD ${Number(amount || 0).toFixed(2)}`;
-}
-
-function formatDate(value) {
-  return value ? new Date(value).toLocaleDateString() : "Not available";
-}
-
 export function OrderListPage() {
   const { access } = useAuth();
   const [orders, setOrders] = useState([]);
-  const [status, setStatus] = useState("loading");
-  const [message, setMessage] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    let active = true;
-    setStatus("loading");
-    setMessage("");
+    if (!access) return;
+    setLoading(true);
 
     listOrders(access)
       .then((data) => {
-        if (!active) return;
         setOrders(itemsFrom(data));
-        setStatus("ready");
       })
-      .catch((error) => {
-        if (!active) return;
-        setMessage(error.message || "Unable to load orders.");
-        setStatus("error");
-      });
-
-    return () => {
-      active = false;
-    };
+      .catch((err) => {
+        setError(err.message || "Unable to load orders.");
+      })
+      .finally(() => setLoading(false));
   }, [access]);
 
-  if (status === "loading") {
-    return <p className="page-message">Loading orders...</p>;
-  }
-
-  if (status === "error") {
-    return <p className="form-error">{message}</p>;
-  }
+  const columns = [
+    {
+      header: "Order ID",
+      accessor: "id",
+      cell: (row) => <strong>#{row.id}</strong>,
+    },
+    {
+      header: "Date",
+      accessor: "created_at",
+      cell: (row) => new Date(row.created_at || Date.now()).toLocaleDateString(),
+    },
+    {
+      header: "Total Amount",
+      accessor: "total_amount",
+      cell: (row) => <strong style={{ color: "var(--primary)" }}>${Number(row.total_amount || 0).toFixed(2)}</strong>,
+    },
+    {
+      header: "Status",
+      accessor: "status",
+      cell: (row) => <StatusBadge status={row.status} />,
+    },
+    {
+      header: "Action",
+      cell: (row) => (
+        <Link to={`/orders/${row.id}`} className="btn btn-outline" style={{ padding: "0.3rem 0.75rem", fontSize: "0.85rem" }}>
+          View Details
+        </Link>
+      ),
+    },
+  ];
 
   return (
-    <section className="content-page">
-      <div className="page-heading">
+    <div style={{ display: "flex", flexDirection: "column", gap: "2rem" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <div>
-          <h1>Orders</h1>
-          <p>Your course purchases.</p>
+          <h1 style={{ fontSize: "2rem", fontWeight: "800" }}>Order History</h1>
+          <p style={{ color: "var(--text-muted)" }}>View all your past course purchases and transactions.</p>
         </div>
-        <Link className="button-link" to="/courses">
-          Browse courses
+        <Link className="btn btn-primary" to="/courses">
+          Explore Courses
         </Link>
       </div>
 
-      {orders.length === 0 ? <p className="page-message">No orders found.</p> : null}
-
-      {orders.length ? (
-        <div className="item-list">
-          {orders.map((order) => (
-            <article className="item-row" key={order.id}>
-              <div>
-                <h2>Order #{order.id}</h2>
-                <p>
-                  {formatMoney(order.total_amount)} / {order.items?.length || 0}{" "}
-                  {(order.items?.length || 0) === 1 ? "course" : "courses"}
-                </p>
-                <small>
-                  {order.status} / {formatDate(order.created_at)}
-                </small>
-              </div>
-              <Link to={`/orders/${order.id}`}>Details</Link>
-            </article>
-          ))}
-        </div>
-      ) : null}
-    </section>
+      {loading ? (
+        <Skeleton height="300px" />
+      ) : error ? (
+        <ErrorState message={error} onRetry={() => window.location.reload()} />
+      ) : orders.length === 0 ? (
+        <EmptyState
+          title="No orders found"
+          description="You have not purchased any paid courses yet."
+          actionText="Browse Courses"
+          actionLink="/courses"
+          icon="📦"
+        />
+      ) : (
+        <DataTable columns={columns} data={orders} keyField="id" />
+      )}
+    </div>
   );
 }

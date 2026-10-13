@@ -13,7 +13,7 @@ class Enrollment(models.Model):
         on_delete=models.CASCADE,
     )
     course = models.ForeignKey(Course, related_name="enrollments", on_delete=models.CASCADE)
-    order = models.ForeignKey(Order, related_name="enrollments", on_delete=models.CASCADE)
+    order = models.ForeignKey(Order, related_name="enrollments", on_delete=models.CASCADE, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

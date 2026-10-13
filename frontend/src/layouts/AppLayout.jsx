@@ -1,59 +1,66 @@
-import { Link, Outlet, useNavigate } from "react-router-dom";
-import { ROLE_LABELS, ROLES } from "../features/auth/roles.js";
+import { useState, useEffect } from "react";
+import { Outlet, useLocation } from "react-router-dom";
+import { Header } from "../components/Header.jsx";
+import { Footer } from "../components/Footer.jsx";
+import { Sidebar } from "../components/Sidebar.jsx";
 import { useAuth } from "../features/auth/useAuth.js";
+import { useTheme } from "../hooks/useTheme.js";
 
 export function AppLayout() {
-  const { isAuthenticated, logout, role, user } = useAuth();
-  const navigate = useNavigate();
+  const { isAuthenticated, role } = useAuth();
+  const location = useLocation();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { theme, toggleTheme } = useTheme();
 
-  async function handleLogout() {
-    await logout();
-    navigate("/login", { replace: true });
-  }
+  // Close mobile drawer whenever route changes
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [location.pathname]);
+
+  // Paths where sidebar should be visible if user is authenticated
+  const isSidebarRoute =
+    isAuthenticated &&
+    !["/", "/courses", "/login", "/register", "/unauthorized", "/privacy", "/terms"].includes(location.pathname) &&
+    !location.pathname.startsWith("/courses/");
+
+  const roleAttr = role ? role.toLowerCase() : "guest";
 
   return (
-    <div className="app-shell">
-      <header className="app-header">
-        <Link className="app-logo" to="/">
-          Standalone LMS
-        </Link>
-        <nav className="app-nav" aria-label="Primary">
-          <Link to="/courses">Courses</Link>
-          {isAuthenticated ? (
-            <>
-              <Link to="/auth-test">{user?.username}</Link>
-              {role === ROLES.ADMIN || role === ROLES.INSTRUCTOR ? (
-                <Link to="/courses/new">New course</Link>
-              ) : null}
-              {role === ROLES.ADMIN ? <Link to="/role-test/admin">Admin</Link> : null}
-              {role === ROLES.INSTRUCTOR ? (
-                <Link to="/role-test/instructor">Instructor</Link>
-              ) : null}
-              {role === ROLES.STUDENT ? (
-                <>
-                  <Link to="/cart">Cart</Link>
-                  <Link to="/orders">Orders</Link>
-                  <Link to="/my-courses">My Courses</Link>
-                  <Link to="/wishlist">Wishlist</Link>
-                  <Link to="/role-test/student">Student</Link>
-                </>
-              ) : null}
-              <span className="role-label">{ROLE_LABELS[role] || "Invalid role"}</span>
-              <button type="button" onClick={handleLogout}>
-                Logout
-              </button>
-            </>
-          ) : (
-            <>
-              <Link to="/login">Login</Link>
-              <Link to="/register">Register</Link>
-            </>
-          )}
-        </nav>
-      </header>
-      <main className="app-main">
-        <Outlet />
-      </main>
+    <div className="app-shell" data-role={roleAttr}>
+      <Header
+        mobileMenuOpen={mobileMenuOpen}
+        onToggleMobileMenu={() => setMobileMenuOpen(!mobileMenuOpen)}
+        theme={theme}
+        onToggleTheme={toggleTheme}
+      />
+
+      {/* Mobile Drawer Sheet Overlay */}
+      {mobileMenuOpen && (
+        <div
+          className="mobile-drawer-backdrop"
+          onClick={() => setMobileMenuOpen(false)}
+        />
+      )}
+
+      {/* Off-canvas Mobile Drawer */}
+      <div className={`mobile-drawer-sheet ${mobileMenuOpen ? "open" : ""}`}>
+        <Sidebar />
+      </div>
+
+      {isSidebarRoute ? (
+        <div className="sidebar-layout">
+          <Sidebar />
+          <main className="main-content">
+            <Outlet />
+          </main>
+        </div>
+      ) : (
+        <main className={["/login", "/register"].includes(location.pathname) ? "app-main-fullbleed" : "app-main"}>
+          <Outlet />
+        </main>
+      )}
+
+      <Footer />
     </div>
   );
 }

@@ -3,6 +3,9 @@ import { Link } from "react-router-dom";
 import { useAuth } from "../features/auth/useAuth.js";
 import { listCart, removeFromCart } from "../features/cart/cartService.js";
 import { listPublishedCourses } from "../features/courses/courseService.js";
+import { Skeleton } from "../components/Skeleton.jsx";
+import { EmptyState } from "../components/EmptyState.jsx";
+import { ErrorState } from "../components/ErrorState.jsx";
 
 function itemsFrom(response) {
   return Array.isArray(response) ? response : response?.results || [];
@@ -33,7 +36,8 @@ export function CartPage() {
     Promise.all([listCart(access), listPublishedCourses({ page_size: 100 })])
       .then(([cartData, courseData]) => {
         if (!active) return;
-        setCart(itemsFrom(cartData));
+        const cItems = Array.isArray(cartData) ? cartData : cartData?.items || [];
+        setCart(cItems);
         setCourses(itemsFrom(courseData));
         setStatus("ready");
       })
@@ -52,6 +56,7 @@ export function CartPage() {
     () => new Map(courses.map((course) => [Number(course.id), course])),
     [courses]
   );
+
   const total = cart.reduce(
     (sum, item) => sum + priceOf(courseById.get(Number(item.course))),
     0
@@ -72,81 +77,89 @@ export function CartPage() {
   }
 
   if (status === "loading") {
-    return <p className="page-message">Loading cart...</p>;
+    return <Skeleton height="300px" />;
   }
 
   if (status === "error") {
-    return <p className="form-error">{message}</p>;
+    return <ErrorState message={message} onRetry={() => window.location.reload()} />;
   }
 
   return (
-    <section className="content-page">
-      <div className="page-heading">
+    <div style={{ display: "flex", flexDirection: "column", gap: "2rem" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <div>
-          <h1>Cart</h1>
-          <p>
-            {cart.length} {cart.length === 1 ? "course" : "courses"} / Total{" "}
-            {formatPrice(total)}
+          <h1 style={{ fontSize: "2rem", fontWeight: "800" }}>Shopping Cart</h1>
+          <p style={{ color: "var(--text-muted)" }}>
+            {cart.length} {cart.length === 1 ? "course" : "courses"} in your cart
           </p>
         </div>
-        <Link className="button-link" to="/courses">
-          Browse courses
+        <Link className="btn btn-outline" to="/courses">
+          Continue Shopping
         </Link>
       </div>
-      {message ? <p className="form-error">{message}</p> : null}
-      {cart.length === 0 ? <p className="page-message">Your cart is empty.</p> : null}
-      {cart.length ? (
-        <>
-          <div className="actions">
-            <Link className="button-link" to="/checkout">
-              Checkout
-            </Link>
-          </div>
-          <div className="course-grid">
+
+      {message && <div style={{ color: "var(--danger)", fontWeight: 600 }}>{message}</div>}
+
+      {cart.length === 0 ? (
+        <EmptyState
+          title="Your shopping cart is empty"
+          description="Explore our course directory to add new skills to your cart."
+          actionText="Browse Courses"
+          actionLink="/courses"
+          icon="🛒"
+        />
+      ) : (
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 320px", gap: "2rem" }}>
+          {/* Cart Items List */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
             {cart.map((item) => {
               const course = courseById.get(Number(item.course));
 
               return (
-                <article className="course-card" key={item.id}>
+                <div className="card" key={item.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "1rem" }}>
                   <div>
-                    <small>{course?.category || `Course #${item.course}`}</small>
-                    <h2>{course?.title || "Cart course"}</h2>
-                    <p>{course?.subtitle || course?.description || "Course details require access."}</p>
+                    <span className="course-category">{course?.category || "Course"}</span>
+                    <h3 style={{ fontSize: "1.1rem", fontWeight: "700" }}>{course?.title || `Course #${item.course}`}</h3>
+                    <p style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>Added {new Date(item.created_at || Date.now()).toLocaleDateString()}</p>
                   </div>
-                  <dl className="detail-list">
-                    <div>
-                      <dt>Price</dt>
-                      <dd>{course ? formatPrice(course.price) : "Unavailable"}</dd>
+
+                  <div style={{ display: "flex", alignItems: "center", gap: "1.5rem" }}>
+                    <div style={{ fontSize: "1.25rem", fontWeight: "800", color: "var(--primary)" }}>
+                      {course ? formatPrice(course.price) : "Free"}
                     </div>
-                    <div>
-                      <dt>Level</dt>
-                      <dd>{course?.level || "Not set"}</dd>
-                    </div>
-                    <div>
-                      <dt>Added</dt>
-                      <dd>{new Date(item.created_at).toLocaleDateString()}</dd>
-                    </div>
-                  </dl>
-                  <div className="course-card-footer">
-                    <span>{course ? "Ready in cart" : "Saved cart item"}</span>
-                    <div className="actions">
-                      <button
-                        className="danger-button"
-                        disabled={removingId === item.course}
-                        onClick={() => handleRemove(item.course)}
-                        type="button"
-                      >
-                        Remove
-                      </button>
-                      <Link to={`/courses/${item.course}`}>Details</Link>
-                    </div>
+                    <button
+                      type="button"
+                      disabled={removingId === item.course}
+                      onClick={() => handleRemove(item.course)}
+                      className="btn btn-danger"
+                      style={{ padding: "0.4rem 0.8rem", fontSize: "0.85rem" }}
+                    >
+                      Remove
+                    </button>
                   </div>
-                </article>
+                </div>
               );
             })}
           </div>
-        </>
-      ) : null}
-    </section>
+
+          {/* Cart Order Summary Card */}
+          <div className="card" style={{ display: "flex", flexDirection: "column", gap: "1.25rem", alignSelf: "start" }}>
+            <h3 style={{ fontSize: "1.25rem", fontWeight: "800" }}>Order Summary</h3>
+            <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid var(--border-color)", paddingBottom: "0.75rem" }}>
+              <span>Subtotal</span>
+              <strong>{formatPrice(total)}</strong>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: "1.2rem", fontWeight: "800" }}>
+              <span>Total</span>
+              <span style={{ color: "var(--primary)" }}>{formatPrice(total)}</span>
+            </div>
+
+            <Link to="/checkout" className="btn btn-primary" style={{ width: "100%", padding: "0.75rem" }}>
+              Proceed to Checkout →
+            </Link>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }

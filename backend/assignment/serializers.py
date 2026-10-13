@@ -18,6 +18,9 @@ class AssignmentSerializer(serializers.ModelSerializer):
             "title",
             "description",
             "instructions",
+            "attachment_type",
+            "pdf_file",
+            "video_url",
             "due_date",
             "max_score",
             "status",
@@ -59,6 +62,8 @@ class AssignmentSerializer(serializers.ModelSerializer):
 class AssignmentSubmissionSerializer(serializers.ModelSerializer):
     assignment = serializers.ReadOnlyField(source="assignment.id")
     student = serializers.ReadOnlyField(source="student.id")
+    student_name = serializers.ReadOnlyField(source="student.username")
+    student_email = serializers.ReadOnlyField(source="student.email")
 
     class Meta:
         model = AssignmentSubmission
@@ -66,7 +71,10 @@ class AssignmentSubmissionSerializer(serializers.ModelSerializer):
             "id",
             "assignment",
             "student",
+            "student_name",
+            "student_email",
             "content",
+            "file",
             "submitted_at",
             "score",
             "feedback",
@@ -78,29 +86,34 @@ class AssignmentSubmissionSerializer(serializers.ModelSerializer):
             "id",
             "assignment",
             "student",
+            "student_name",
+            "student_email",
             "submitted_at",
             "score",
             "feedback",
-            "status",
             "created_at",
             "updated_at",
         )
 
-    def create(self, validated_data):
-        validated_data["submitted_at"] = timezone.now()
-        validated_data["status"] = AssignmentSubmission.Status.SUBMITTED
-        return super().create(validated_data)
+    def validate(self, attrs):
+        content = attrs.get("content", getattr(self.instance, "content", "")) or ""
+        file = attrs.get("file", getattr(self.instance, "file", None))
+        if not content.strip() and not file:
+            raise serializers.ValidationError({"detail": "Please provide submission text content or upload a deliverable file."})
+        return attrs
 
-    def validate_content(self, value):
-        value = value.strip()
-        if not value:
-            raise serializers.ValidationError("Submission content is required.")
-        return value
+    def create(self, validated_data):
+        status = validated_data.get("status", AssignmentSubmission.Status.SUBMITTED)
+        if status == AssignmentSubmission.Status.SUBMITTED and "submitted_at" not in validated_data:
+            validated_data["submitted_at"] = timezone.now()
+        return super().create(validated_data)
 
 
 class AssignmentGradeSerializer(serializers.ModelSerializer):
     assignment = serializers.ReadOnlyField(source="assignment.id")
     student = serializers.ReadOnlyField(source="student.id")
+    student_name = serializers.ReadOnlyField(source="student.username")
+    student_email = serializers.ReadOnlyField(source="student.email")
 
     class Meta:
         model = AssignmentSubmission
@@ -108,7 +121,10 @@ class AssignmentGradeSerializer(serializers.ModelSerializer):
             "id",
             "assignment",
             "student",
+            "student_name",
+            "student_email",
             "content",
+            "file",
             "submitted_at",
             "score",
             "feedback",
@@ -121,6 +137,7 @@ class AssignmentGradeSerializer(serializers.ModelSerializer):
             "assignment",
             "student",
             "content",
+            "file",
             "submitted_at",
             "status",
             "created_at",

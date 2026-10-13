@@ -77,7 +77,7 @@ class CourseAnnouncementPinView(APIView):
 
         announcement = get_object_or_404(CourseAnnouncement, pk=pk, course=course)
         previous = snapshot(announcement)
-        announcement.is_pinned = True
+        announcement.is_pinned = not announcement.is_pinned
         announcement.save(update_fields=("is_pinned", "updated_at"))
         log_admin_action(request.user, AuditLog.Action.UPDATE, announcement, previous, snapshot(announcement))
         return Response(CourseAnnouncementSerializer(announcement).data, status=status.HTTP_200_OK)

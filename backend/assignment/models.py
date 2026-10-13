@@ -9,14 +9,22 @@ class Assignment(models.Model):
         DRAFT = "draft", "Draft"
         PUBLISHED = "published", "Published"
 
+    class AttachmentType(models.TextChoices):
+        TEXT = "text", "Text / Instructions"
+        PDF = "pdf", "PDF Document"
+        VIDEO = "video", "Video Lesson / Link"
+
     course = models.ForeignKey(Course, related_name="assignments", on_delete=models.CASCADE)
     lesson = models.ForeignKey(Lesson, related_name="assignments", on_delete=models.CASCADE, null=True, blank=True)
     title = models.CharField(max_length=255)
     description = models.TextField(blank=True)
     instructions = models.TextField(blank=True)
+    attachment_type = models.CharField(max_length=20, choices=AttachmentType.choices, default=AttachmentType.TEXT)
+    pdf_file = models.FileField(upload_to="assignments/pdfs/", null=True, blank=True)
+    video_url = models.CharField(max_length=500, blank=True, default="")
     due_date = models.DateTimeField(null=True, blank=True)
     max_score = models.PositiveIntegerField(default=100)
-    status = models.CharField(max_length=20, choices=Status.choices, default=Status.DRAFT)
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.PUBLISHED)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -36,6 +44,7 @@ class AssignmentSubmission(models.Model):
     assignment = models.ForeignKey(Assignment, related_name="submissions", on_delete=models.CASCADE)
     student = models.ForeignKey(settings.AUTH_USER_MODEL, related_name="assignment_submissions", on_delete=models.CASCADE)
     content = models.TextField(blank=True)
+    file = models.FileField(upload_to="assignments/submissions/", null=True, blank=True)
     submitted_at = models.DateTimeField(null=True, blank=True)
     score = models.PositiveIntegerField(default=0)
     feedback = models.TextField(blank=True)

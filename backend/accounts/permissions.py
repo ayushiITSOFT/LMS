@@ -9,11 +9,11 @@ STUDENT = "student"
 
 
 def has_role(user, role):
-    return bool(user and user.is_authenticated and user.role == role)
+    return bool(user and user.is_authenticated and str(getattr(user, "role", "")).lower() == str(role).lower())
 
 
 def is_admin(user):
-    return bool(user and user.is_authenticated and (user.is_staff or user.role == ADMIN))
+    return bool(user and user.is_authenticated and (user.is_staff or str(getattr(user, "role", "")).lower() == ADMIN))
 
 
 def is_instructor(user):
@@ -41,19 +41,32 @@ class IsStudentRole(permissions.BasePermission):
 
 class CanCreateCourse(permissions.BasePermission):
     def has_permission(self, request, view):
-        return is_admin(request.user) or is_instructor(request.user)
+        if is_admin(request.user):
+            return False  # Admin has view-only access
+        return is_instructor(request.user)
 
 
 class CanManageOwnCourse(permissions.BasePermission):
     def has_permission(self, request, view):
-        return is_admin(request.user) or is_instructor(request.user)
+        if is_admin(request.user):
+            return request.method in permissions.SAFE_METHODS
+        return is_instructor(request.user)
 
     def has_object_permission(self, request, view, obj):
         if is_admin(request.user):
-            return True
+            return request.method in permissions.SAFE_METHODS
 
-        # TODO: Confirm Course owner field name when Course model is implemented.
-        owner = getattr(obj, "instructor", None) or getattr(obj, "owner", None)
+        target_course = obj
+        if hasattr(obj, "quiz") and hasattr(obj.quiz, "course"):
+            target_course = obj.quiz.course
+        elif hasattr(obj, "question") and hasattr(obj.question, "quiz") and hasattr(obj.question.quiz, "course"):
+            target_course = obj.question.quiz.course
+        elif hasattr(obj, "section") and hasattr(obj.section, "course"):
+            target_course = obj.section.course
+        elif hasattr(obj, "course"):
+            target_course = obj.course
+
+        owner = getattr(target_course, "instructor", None) or getattr(target_course, "owner", None)
         return is_instructor(request.user) and owner == request.user
 
 class CanAccessLesson(permissions.BasePermission):
@@ -93,7 +106,7 @@ class CanDeleteOwnCourse(CanManageOwnCourse):
 
 class CanBrowseCourses(permissions.BasePermission):
     def has_permission(self, request, view):
-        return is_admin(request.user) or is_student(request.user)
+        return True
 
 
 class CanBuyCourse(permissions.BasePermission):

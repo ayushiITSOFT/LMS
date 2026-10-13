@@ -18,6 +18,7 @@ class LessonSerializer(serializers.ModelSerializer):
             "title",
             "kind",
             "video_url",
+            "video_file",
             "pdf",
             "notes",
             "preview",
@@ -36,6 +37,9 @@ class LessonSerializer(serializers.ModelSerializer):
     def validate_pdf(self, value):
         return validate_upload(value, "pdf") if value else value
 
+    def validate_video_file(self, value):
+        return validate_upload(value, "video") if value else value
+
 
 class LessonPreviewSerializer(serializers.ModelSerializer):
     class Meta:
@@ -45,6 +49,7 @@ class LessonPreviewSerializer(serializers.ModelSerializer):
             "title",
             "kind",
             "video_url",
+            "video_file",
             "pdf",
             "notes",
             "order",
@@ -93,8 +98,16 @@ class SectionPreviewSerializer(serializers.ModelSerializer):
         )
 
     def get_lessons(self, section):
-        preview_lessons = section.lessons.filter(preview=True).order_by("order")
-        return LessonPreviewSerializer(preview_lessons, many=True).data
+        request = self.context.get("request")
+        user = getattr(request, "user", None)
+        course = section.course
+        if user and user.is_authenticated and (user.is_staff or user.id == course.instructor_id):
+            preview_lessons = section.lessons.all().order_by("order")
+        else:
+            preview_lessons = section.lessons.filter(preview=True).order_by("order")
+            if not preview_lessons.exists():
+                preview_lessons = section.lessons.all().order_by("order")
+        return LessonPreviewSerializer(preview_lessons, many=True, context=self.context).data
 
 
 class CourseSerializer(serializers.ModelSerializer):

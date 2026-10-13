@@ -5,6 +5,10 @@ export function listEnrollments(token) {
   return apiClient.get("enrollment/my-courses/", { headers: authHeader(token) });
 }
 
+export function listAdminEnrollments(token) {
+  return apiClient.get("enrollment/", { headers: authHeader(token) });
+}
+
 export function getEnrollment(courseId, token) {
   return apiClient.get(`enrollment/my-courses/${courseId}/`, {
     headers: authHeader(token),
@@ -27,4 +31,8 @@ export function completeLesson(courseId, lessonId, token) {
 
 export function getStudentDashboard(token) {
   return apiClient.get("enrollment/dashboard/", { headers: authHeader(token) });
+}
+
+export function listCourseEnrollments(courseId, token) {
+  return apiClient.get(`enrollment/?course=${courseId}`, { headers: authHeader(token) });
 }

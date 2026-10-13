@@ -1,5 +1,6 @@
 from django.shortcuts import get_object_or_404
-from rest_framework import generics, permissions
+from rest_framework import generics, permissions, status
+from rest_framework.response import Response
 from rest_framework.exceptions import PermissionDenied
 from django.db import transaction
 
@@ -16,17 +17,21 @@ from .serializers import (
     QuizDetailSerializer,
     QuizOptionSerializer,
     QuizQuestionSerializer,
+    QuizQuestionCreateSerializer,
     QuizSerializer,
 )
 
 
 class QuizListCreateView(generics.ListCreateAPIView):
     serializer_class = QuizSerializer
-    permission_classes = (permissions.IsAuthenticated, CanManageOwnCourse)
+
+    def get_permissions(self):
+        if self.request.method in permissions.SAFE_METHODS:
+            return [permissions.IsAuthenticated()]
+        return [permissions.IsAuthenticated(), CanManageOwnCourse()]
 
     def get_queryset(self):
         course = get_object_or_404(Course, pk=self.kwargs.get("course_pk"))
-        self.check_object_permissions(self.request, course)
         return Quiz.objects.filter(course=course).select_related("course", "lesson")
 
     def perform_create(self, serializer):
@@ -38,31 +43,43 @@ class QuizListCreateView(generics.ListCreateAPIView):
 
 class QuizDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = QuizDetailSerializer
-    permission_classes = (permissions.IsAuthenticated, CanManageOwnCourse)
+
+    def get_permissions(self):
+        if self.request.method in permissions.SAFE_METHODS:
+            return [permissions.IsAuthenticated()]
+        return [permissions.IsAuthenticated(), CanManageOwnCourse()]
 
     def get_queryset(self):
         course = get_object_or_404(Course, pk=self.kwargs.get("course_pk"))
-        self.check_object_permissions(self.request, course)
         return Quiz.objects.filter(course=course).select_related("course", "lesson").prefetch_related("questions__options")
 
     def perform_update(self, serializer):
-        previous = snapshot(self.get_object())
+        quiz = self.get_object()
+        self.check_object_permissions(self.request, quiz.course)
+        previous = snapshot(quiz)
         instance = serializer.save()
         log_admin_action(self.request.user, AuditLog.Action.UPDATE, instance, previous, snapshot(instance))
 
     def perform_destroy(self, instance):
+        self.check_object_permissions(self.request, instance.course)
         previous = snapshot(instance)
         log_admin_action(self.request.user, AuditLog.Action.DELETE, instance, previous, None)
         instance.delete()
 
 
 class QuizQuestionListCreateView(generics.ListCreateAPIView):
-    serializer_class = QuizQuestionSerializer
-    permission_classes = (permissions.IsAuthenticated, CanManageOwnCourse)
+    def get_permissions(self):
+        if self.request.method in permissions.SAFE_METHODS:
+            return [permissions.IsAuthenticated()]
+        return [permissions.IsAuthenticated(), CanManageOwnCourse()]
+
+    def get_serializer_class(self):
+        if self.request.method == "POST":
+            return QuizQuestionCreateSerializer
+        return QuizQuestionSerializer
 
     def get_queryset(self):
         quiz = get_object_or_404(Quiz.objects.select_related("course"), pk=self.kwargs.get("quiz_pk"), course_id=self.kwargs.get("course_pk"))
-        self.check_object_permissions(self.request, quiz.course)
         return QuizQuestion.objects.filter(quiz=quiz).select_related("quiz").prefetch_related("options")
 
     def perform_create(self, serializer):
@@ -71,13 +88,38 @@ class QuizQuestionListCreateView(generics.ListCreateAPIView):
         serializer.save(quiz=quiz)
 
 
-class QuizOptionListCreateView(generics.ListCreateAPIView):
-    serializer_class = QuizOptionSerializer
-    permission_classes = (permissions.IsAuthenticated, CanManageOwnCourse)
+class QuizQuestionDetailView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = QuizQuestionSerializer
+
+    def get_permissions(self):
+        if self.request.method in permissions.SAFE_METHODS:
+            return [permissions.IsAuthenticated()]
+        return [permissions.IsAuthenticated(), CanManageOwnCourse()]
 
     def get_queryset(self):
         quiz = get_object_or_404(Quiz.objects.select_related("course"), pk=self.kwargs.get("quiz_pk"), course_id=self.kwargs.get("course_pk"))
-        self.check_object_permissions(self.request, quiz.course)
+        return QuizQuestion.objects.filter(quiz=quiz).select_related("quiz").prefetch_related("options")
+
+    def perform_update(self, serializer):
+        question = self.get_object()
+        self.check_object_permissions(self.request, question.quiz.course)
+        serializer.save()
+
+    def perform_destroy(self, instance):
+        self.check_object_permissions(self.request, instance.quiz.course)
+        instance.delete()
+
+
+class QuizOptionListCreateView(generics.ListCreateAPIView):
+    serializer_class = QuizOptionSerializer
+
+    def get_permissions(self):
+        if self.request.method in permissions.SAFE_METHODS:
+            return [permissions.IsAuthenticated()]
+        return [permissions.IsAuthenticated(), CanManageOwnCourse()]
+
+    def get_queryset(self):
+        quiz = get_object_or_404(Quiz.objects.select_related("course"), pk=self.kwargs.get("quiz_pk"), course_id=self.kwargs.get("course_pk"))
         return QuizOption.objects.filter(question__quiz=quiz).select_related("question__quiz")
 
     def perform_create(self, serializer):
@@ -141,7 +183,7 @@ class QuizAnswerCreateView(generics.CreateAPIView):
     serializer_class = QuizAnswerSerializer
     permission_classes = (permissions.IsAuthenticated,)
 
-    def perform_create(self, serializer):
+    def create(self, request, *args, **kwargs):
         attempt = get_object_or_404(
             QuizAttempt.objects.select_related("quiz__course"),
             pk=self.kwargs.get("attempt_pk"),
@@ -158,12 +200,27 @@ class QuizAnswerCreateView(generics.CreateAPIView):
             pk=self.kwargs.get("question_pk"),
         )
 
-        serializer.save(
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        selected_options = list(serializer.validated_data.get("selected_options", []))
+        single_option = serializer.validated_data.get("selected_option")
+        if single_option and single_option not in selected_options:
+            selected_options.append(single_option)
+
+        answer, created = QuizAnswer.objects.get_or_create(
             attempt=attempt,
             question=question,
         )
-        
-class QuizAttemptSubmitView(generics.UpdateAPIView):
+        answer.selected_options.set(selected_options)
+        answer.save()
+
+        return Response(
+            QuizAnswerSerializer(answer).data,
+            status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
+        )
+
+class QuizAttemptSubmitView(generics.GenericAPIView):
     serializer_class = QuizAttemptSerializer
     permission_classes = (permissions.IsAuthenticated,)
 
@@ -176,8 +233,13 @@ class QuizAttemptSubmitView(generics.UpdateAPIView):
         )
 
     @transaction.atomic
-    def perform_update(self, serializer):
-        attempt = self.get_object()
+    def post(self, request, *args, **kwargs):
+        attempt = get_object_or_404(
+            self.get_queryset(),
+            pk=self.kwargs.get("pk"),
+            quiz_id=self.kwargs.get("quiz_pk"),
+            quiz__course_id=self.kwargs.get("course_pk"),
+        )
 
         if attempt.status != QuizAttempt.Status.IN_PROGRESS:
             raise PermissionDenied(
@@ -211,14 +273,35 @@ class QuizAttemptSubmitView(generics.UpdateAPIView):
                     ).values_list("id", flat=True)
                 )
 
-                if selected == correct:
+                if selected and selected == correct:
                     correct_count += 1
 
-            score = (correct_count / total_questions) * 100
+            score = round((correct_count / total_questions) * 100, 2)
 
-        instance = serializer.save(
-            status=QuizAttempt.Status.SUBMITTED,
-            score=score,
-        )
+        attempt.status = QuizAttempt.Status.SUBMITTED
+        attempt.score = score
+        attempt.save()
 
-        return instance
+        # Automatically record lesson progress as completed upon submitting quiz attempt
+        try:
+            from enrollment.models import Enrollment, CourseProgress
+            enrollment = Enrollment.objects.filter(student=attempt.student, course=attempt.quiz.course).first()
+            if enrollment:
+                target_lesson = attempt.quiz.lesson
+                if not target_lesson:
+                    from courses.models import Lesson
+                    target_lesson = Lesson.objects.filter(section__course=attempt.quiz.course).first()
+                if target_lesson:
+                    progress, _ = CourseProgress.objects.get_or_create(enrollment=enrollment, lesson=target_lesson)
+                    progress.mark_completed()
+        except Exception:
+            pass
+
+        serializer = self.get_serializer(attempt)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def put(self, request, *args, **kwargs):
+        return self.post(request, *args, **kwargs)
+
+    def patch(self, request, *args, **kwargs):
+        return self.post(request, *args, **kwargs)

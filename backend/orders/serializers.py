@@ -14,9 +14,11 @@ class OrderItemSerializer(serializers.ModelSerializer):
 
 
 class OrderSerializer(serializers.ModelSerializer):
+    student_name = serializers.ReadOnlyField(source="student.username")
+    student_email = serializers.ReadOnlyField(source="student.email")
     items = OrderItemSerializer(many=True, read_only=True)
 
     class Meta:
         model = Order
-        fields = ("id", "status", "total_amount", "items", "created_at", "updated_at")
+        fields = ("id", "student", "student_name", "student_email", "status", "total_amount", "items", "created_at", "updated_at")
         read_only_fields = fields

@@ -9,14 +9,10 @@ User = get_user_model()
 
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, min_length=8)
-    role = serializers.ChoiceField(
-        choices=(User.Role.STUDENT, User.Role.INSTRUCTOR),
-        default=User.Role.STUDENT,
-    )
 
     class Meta:
         model = User
-        fields = ("id", "username", "email", "password", "role")
+        fields = ("id", "username", "email", "password")
         read_only_fields = ("id",)
 
     def validate_email(self, value):
@@ -36,6 +32,7 @@ class RegisterSerializer(serializers.ModelSerializer):
         return value
 
     def create(self, validated_data):
+        validated_data["role"] = User.Role.STUDENT
         return User.objects.create_user(**validated_data)
 
 
@@ -44,6 +41,33 @@ class UserSerializer(serializers.ModelSerializer):
         model = User
         fields = ("id", "username", "email", "role")
         read_only_fields = fields
+
+
+class UserAdminSerializer(serializers.ModelSerializer):
+    password = serializers.CharField(write_only=True, required=False, min_length=8)
+
+    class Meta:
+        model = User
+        fields = (
+            "id",
+            "username",
+            "email",
+            "password",
+            "first_name",
+            "last_name",
+            "role",
+            "is_active",
+            "is_staff",
+            "is_superuser",
+            "date_joined",
+            "last_login",
+        )
+        read_only_fields = ("id", "date_joined", "last_login")
+
+    def create(self, validated_data):
+        password = validated_data.pop("password", None)
+        user = User.objects.create_user(password=password, **validated_data)
+        return user
 
 
 class LoginSerializer(TokenObtainPairSerializer):

@@ -7,12 +7,53 @@ from .models import Enrollment, CourseProgress
 
 
 class EnrollmentSerializer(serializers.ModelSerializer):
+    student_id = serializers.ReadOnlyField(source="student.id")
+    student_name = serializers.ReadOnlyField(source="student.username")
+    student_email = serializers.ReadOnlyField(source="student.email")
+    student_full_name = serializers.SerializerMethodField(read_only=True)
     course_title = serializers.ReadOnlyField(source="course.title")
+    progress_percentage = serializers.SerializerMethodField(read_only=True)
+    completed = serializers.SerializerMethodField(read_only=True)
+    has_certificate = serializers.SerializerMethodField(read_only=True)
+    certificate_id = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = Enrollment
-        fields = ("id", "course", "course_title", "order", "created_at")
-        read_only_fields = ("id", "course", "course_title", "order", "created_at")
+        fields = (
+            "id",
+            "student",
+            "student_id",
+            "student_name",
+            "student_email",
+            "student_full_name",
+            "course",
+            "course_title",
+            "order",
+            "progress_percentage",
+            "completed",
+            "has_certificate",
+            "certificate_id",
+            "created_at",
+        )
+        read_only_fields = fields
+
+    def get_student_full_name(self, obj):
+        name = f"{obj.student.first_name} {obj.student.last_name}".strip()
+        return name or obj.student.username
+
+    def get_progress_percentage(self, obj):
+        return obj.get_progress_percentage()
+
+    def get_completed(self, obj):
+        return obj.is_course_completed()
+
+    def get_has_certificate(self, obj):
+        return hasattr(obj, "certificate") and obj.certificate is not None
+
+    def get_certificate_id(self, obj):
+        if hasattr(obj, "certificate") and obj.certificate:
+            return obj.certificate.certificate_id
+        return None
 
 
 class CourseSummarySerializer(serializers.ModelSerializer):
@@ -27,7 +68,7 @@ class LessonProgressSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Lesson
-        fields = ("id", "title", "kind", "video_url", "pdf", "notes", "preview", "order", "completed")
+        fields = ("id", "title", "kind", "video_url", "video_file", "pdf", "notes", "preview", "order", "completed")
 
     def get_completed(self, obj):
         enrollment = self.context.get("enrollment")

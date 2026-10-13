@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
+import { Search, Plus, RotateCcw, Filter } from "lucide-react";
 import { ROLES } from "../features/auth/roles.js";
 import { useAuth } from "../features/auth/useAuth.js";
 import { addToCart, listCart, removeFromCart } from "../features/cart/cartService.js";
@@ -9,6 +10,10 @@ import {
   listWishlist,
   removeFromWishlist,
 } from "../features/wishlist/wishlistService.js";
+import { CourseCard } from "../components/CourseCard.jsx";
+import { CourseCardSkeleton } from "../components/Skeleton.jsx";
+import { EmptyState } from "../components/EmptyState.jsx";
+import { ErrorState } from "../components/ErrorState.jsx";
 
 const FILTER_KEYS = [
   "search",
@@ -40,11 +45,6 @@ function paramsFromSearch(searchParams) {
   return params;
 }
 
-function formatPrice(price) {
-  const amount = Number(price || 0);
-  return amount > 0 ? `$${amount.toFixed(2)}` : "Free";
-}
-
 export function CourseListPage() {
   const { access, isAuthenticated, role } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -54,9 +54,7 @@ export function CourseListPage() {
   const [status, setStatus] = useState("loading");
   const [message, setMessage] = useState("");
   const [cartIds, setCartIds] = useState(() => new Set());
-  const [cartStatus, setCartStatus] = useState({});
   const [wishlistIds, setWishlistIds] = useState(() => new Set());
-  const [wishlistStatus, setWishlistStatus] = useState({});
   const page = Number(searchParams.get("page") || "1");
 
   useEffect(() => {
@@ -75,14 +73,12 @@ export function CourseListPage() {
     Promise.all([listCart(access), listWishlist(access)])
       .then(([cartItems, wishlistItems]) => {
         if (!active) return;
-        setCartIds(new Set(cartItems.map((item) => Number(item.course))));
-        setWishlistIds(new Set(wishlistItems.map((item) => Number(item.course))));
+        const cItems = Array.isArray(cartItems) ? cartItems : cartItems?.items || [];
+        const wItems = Array.isArray(wishlistItems) ? wishlistItems : wishlistItems?.results || [];
+        setCartIds(new Set(cItems.map((item) => Number(item.course))));
+        setWishlistIds(new Set(wItems.map((item) => Number(item.course))));
       })
-      .catch(() => {
-        if (!active) return;
-        setCartIds(new Set());
-        setWishlistIds(new Set());
-      });
+      .catch(() => null);
 
     return () => {
       active = false;
@@ -103,7 +99,7 @@ export function CourseListPage() {
       })
       .catch((error) => {
         if (!active) return;
-        setMessage(error.message || "Unable to load courses.");
+        setMessage(error.message || "Unable to load courses from the backend.");
         setStatus("error");
       });
 
@@ -118,7 +114,7 @@ export function CourseListPage() {
   }
 
   function applyFilters(event) {
-    event.preventDefault();
+    if (event) event.preventDefault();
     const next = {};
 
     FILTER_KEYS.forEach((key) => {
@@ -130,6 +126,7 @@ export function CourseListPage() {
   }
 
   function clearFilters() {
+    setFilters({});
     setSearchParams({ page: "1" });
   }
 
@@ -142,7 +139,6 @@ export function CourseListPage() {
   async function toggleWishlist(courseId) {
     const normalizedId = Number(courseId);
     const isWishlisted = wishlistIds.has(normalizedId);
-    setWishlistStatus((current) => ({ ...current, [normalizedId]: "loading" }));
 
     try {
       if (isWishlisted) {
@@ -161,16 +157,12 @@ export function CourseListPage() {
       });
     } catch (error) {
       setMessage(error.message || "Unable to update wishlist.");
-    } finally {
-      setWishlistStatus((current) => ({ ...current, [normalizedId]: "ready" }));
     }
   }
 
   async function toggleCart(courseId) {
     const normalizedId = Number(courseId);
     const isInCart = cartIds.has(normalizedId);
-    setCartStatus((current) => ({ ...current, [normalizedId]: "loading" }));
-    setMessage("");
 
     try {
       if (isInCart) {
@@ -189,196 +181,146 @@ export function CourseListPage() {
       });
     } catch (error) {
       setMessage(error.message || "Unable to update cart.");
-    } finally {
-      setCartStatus((current) => ({ ...current, [normalizedId]: "ready" }));
     }
   }
 
   const canCreate = role === ROLES.ADMIN || role === ROLES.INSTRUCTOR;
-  const canStudentActions = isAuthenticated && role === ROLES.STUDENT;
+  const activeFilterCount = FILTER_KEYS.filter((k) => k !== "page" && k !== "page_size" && filters[k]).length;
 
   return (
-    <section className="content-page">
-      <div className="page-heading">
+    <div style={{ display: "flex", flexDirection: "column", gap: "1.75rem" }}>
+      {/* Header Bar */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "1rem" }}>
         <div>
-          <h1>Courses</h1>
-          <p>Browse published courses from the discovery API.</p>
+          <h1 style={{ fontSize: "1.75rem", fontWeight: "800", letterSpacing: "-0.02em" }}>Course Marketplace</h1>
+          <p style={{ color: "var(--text-muted)", fontSize: "0.95rem" }}>
+            Explore industry-leading courses and expand your expertise.
+          </p>
         </div>
-        {canCreate ? (
-          <Link className="button-link" to="/courses/new">
-            Create course
+        {canCreate && (
+          <Link className="btn btn-primary" to="/instructor/courses/create">
+            <Plus size={16} />
+            <span>Create New Course</span>
           </Link>
-        ) : null}
+        )}
       </div>
 
-      <form className="filter-panel" onSubmit={applyFilters}>
-        <label>
-          Search
-          <input name="search" value={filters.search || ""} onChange={updateFilter} />
-        </label>
-        <label>
-          Category
-          <input name="category" value={filters.category || ""} onChange={updateFilter} />
-        </label>
-        <label>
-          Instructor
-          <input name="instructor" value={filters.instructor || ""} onChange={updateFilter} />
-        </label>
-        <label>
-          Level
-          <select name="level" value={filters.level || ""} onChange={updateFilter}>
-            <option value="">Any</option>
-            <option value="beginner">Beginner</option>
-            <option value="intermediate">Intermediate</option>
-            <option value="advanced">Advanced</option>
-          </select>
-        </label>
-        <label>
-          Language
-          <input name="language" value={filters.language || ""} onChange={updateFilter} />
-        </label>
-        <label>
-          Price
-          <select name="is_paid" value={filters.is_paid || ""} onChange={updateFilter}>
-            <option value="">Any</option>
-            <option value="false">Free</option>
-            <option value="true">Paid</option>
-          </select>
-        </label>
-        <label>
-          Min price
-          <input
-            min="0"
-            name="price_min"
-            type="number"
-            value={filters.price_min || ""}
-            onChange={updateFilter}
-          />
-        </label>
-        <label>
-          Max price
-          <input
-            min="0"
-            name="price_max"
-            type="number"
-            value={filters.price_max || ""}
-            onChange={updateFilter}
-          />
-        </label>
-        <label>
-          Min rating
-          <input
-            max="5"
-            min="0"
-            name="rating_min"
-            step="0.1"
-            type="number"
-            value={filters.rating_min || ""}
-            onChange={updateFilter}
-          />
-        </label>
-        <label>
-          Sort
-          <select name="ordering" value={filters.ordering || ""} onChange={updateFilter}>
-            <option value="">Default</option>
-            <option value="title">Title A-Z</option>
-            <option value="-title">Title Z-A</option>
-            <option value="price">Price low-high</option>
-            <option value="-price">Price high-low</option>
-            <option value="-average_rating">Top rated</option>
-            <option value="-updated_at">Recently updated</option>
-          </select>
-        </label>
-        <label>
-          Per page
-          <select name="page_size" value={filters.page_size || ""} onChange={updateFilter}>
-            <option value="">Default</option>
-            <option value="10">10</option>
-            <option value="20">20</option>
-            <option value="50">50</option>
-          </select>
-        </label>
-        <div className="filter-actions">
-          <button type="submit">Apply</button>
-          <button type="button" onClick={clearFilters}>
-            Clear
-          </button>
+      {/* Search & Filter Toolbar */}
+      <form className="card" onSubmit={applyFilters} style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "1rem" }}>
+          <div className="form-group" style={{ marginBottom: 0 }}>
+            <label className="form-label">Search Query</label>
+            <div style={{ position: "relative" }}>
+              <input
+                className="input"
+                name="search"
+                placeholder="Search topics, skills..."
+                value={filters.search || ""}
+                onChange={updateFilter}
+                style={{ paddingLeft: "2.25rem" }}
+              />
+              <Search size={15} style={{ position: "absolute", left: "0.75rem", top: "50%", transform: "translateY(-50%)", color: "var(--slate-400)" }} />
+            </div>
+          </div>
+
+          <div className="form-group" style={{ marginBottom: 0 }}>
+            <label className="form-label">Category</label>
+            <input className="input" name="category" placeholder="Category name..." value={filters.category || ""} onChange={updateFilter} />
+          </div>
+
+          <div className="form-group" style={{ marginBottom: 0 }}>
+            <label className="form-label">Price Type</label>
+            <select className="select" name="is_paid" value={filters.is_paid || ""} onChange={updateFilter}>
+              <option value="">All Prices</option>
+              <option value="false">Free Courses</option>
+              <option value="true">Paid Courses</option>
+            </select>
+          </div>
+
+          <div className="form-group" style={{ marginBottom: 0 }}>
+            <label className="form-label">Sort By</label>
+            <select className="select" name="ordering" value={filters.ordering || ""} onChange={updateFilter}>
+              <option value="">Newest First</option>
+              <option value="title">Title A-Z</option>
+              <option value="price">Price Low-High</option>
+              <option value="-price">Price High-Low</option>
+              <option value="-average_rating">Highest Rated</option>
+            </select>
+          </div>
+        </div>
+
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: "0.5rem", borderTop: "1px solid var(--border-color)" }}>
+          <div style={{ fontSize: "0.825rem", color: "var(--text-muted)", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+            <Filter size={14} />
+            <span>{pagination?.count !== undefined ? `${pagination.count} courses available` : "Filtering catalog"}</span>
+            {activeFilterCount > 0 && (
+              <span className="badge badge-info">{activeFilterCount} active filter{activeFilterCount > 1 ? "s" : ""}</span>
+            )}
+          </div>
+
+          <div style={{ display: "flex", gap: "0.5rem" }}>
+            {activeFilterCount > 0 && (
+              <button type="button" onClick={clearFilters} className="btn btn-secondary btn-sm">
+                <RotateCcw size={14} />
+                <span>Reset</span>
+              </button>
+            )}
+            <button type="submit" className="btn btn-primary btn-sm">
+              Apply Filters
+            </button>
+          </div>
         </div>
       </form>
 
-      {status === "loading" ? <p className="page-message">Loading courses...</p> : null}
-      {status === "error" ? <p className="form-error">{message}</p> : null}
-      {status === "ready" && courses.length === 0 ? (
-        <p className="page-message">No published courses found.</p>
-      ) : null}
-
-      {courses.length ? (
+      {/* Content Rendering */}
+      {status === "loading" ? (
+        <div className="course-grid">
+          <CourseCardSkeleton />
+          <CourseCardSkeleton />
+          <CourseCardSkeleton />
+          <CourseCardSkeleton />
+        </div>
+      ) : status === "error" ? (
+        <ErrorState message={message} onRetry={() => setSearchParams({ page: "1" })} />
+      ) : courses.length === 0 ? (
+        <EmptyState
+          title="No courses match your search"
+          description="Try adjusting your search query, changing categories, or resetting filters."
+          actionText="Clear All Filters"
+          onAction={clearFilters}
+        />
+      ) : (
         <div className="course-grid">
           {courses.map((course) => (
-            <article className="course-card" key={course.id}>
-              <div>
-                <small>
-                  {course.category || "Uncategorized"} / {course.level || "Any level"}
-                </small>
-                <h2>{course.title}</h2>
-                <p>{course.subtitle || course.description || "No description provided."}</p>
-              </div>
-              <dl className="detail-list">
-                <div>
-                  <dt>Price</dt>
-                  <dd>{formatPrice(course.price)}</dd>
-                </div>
-                <div>
-                  <dt>Language</dt>
-                  <dd>{course.language || "Not set"}</dd>
-                </div>
-                <div>
-                  <dt>Rating</dt>
-                  <dd>{Number(course.average_rating || 0).toFixed(1)}</dd>
-                </div>
-              </dl>
-              <div className="course-card-footer">
-                <span>By {course.instructor || "Instructor"}</span>
-                <div className="actions">
-                  {canStudentActions ? (
-                    <>
-                      <button
-                        className="cart-button"
-                        disabled={cartStatus[course.id] === "loading"}
-                        onClick={() => toggleCart(course.id)}
-                        type="button"
-                      >
-                        {cartIds.has(Number(course.id)) ? "Remove cart" : "Add to cart"}
-                      </button>
-                      <button
-                        className="wishlist-button"
-                        disabled={wishlistStatus[course.id] === "loading"}
-                        onClick={() => toggleWishlist(course.id)}
-                        type="button"
-                      >
-                        {wishlistIds.has(Number(course.id)) ? "Remove" : "Wishlist"}
-                      </button>
-                    </>
-                  ) : null}
-                  <Link to={`/courses/${course.id}`}>Details</Link>
-                </div>
-              </div>
-            </article>
+            <CourseCard
+              key={course.id}
+              course={course}
+              onWishlistToggle={role === ROLES.STUDENT ? toggleWishlist : null}
+              onAddToCart={role === ROLES.STUDENT ? toggleCart : null}
+              isWishlisted={wishlistIds.has(Number(course.id))}
+              isInCart={cartIds.has(Number(course.id))}
+            />
           ))}
         </div>
-      ) : null}
+      )}
 
-      {pagination?.count > courses.length ? (
-        <div className="pagination">
-          <button disabled={!pagination.previous} onClick={() => goToPage(page - 1)}>
-            Previous
-          </button>
-          <span>Page {page}</span>
-          <button disabled={!pagination.next} onClick={() => goToPage(page + 1)}>
-            Next
-          </button>
+      {/* Pagination */}
+      {pagination && (pagination.previous || pagination.next) && (
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "1rem", paddingTop: "1rem", borderTop: "1px solid var(--border-color)" }}>
+          <span style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>
+            Page <strong>{page}</strong>
+          </span>
+          <div style={{ display: "flex", gap: "0.5rem" }}>
+            <button className="btn btn-secondary btn-sm" disabled={!pagination.previous} onClick={() => goToPage(page - 1)}>
+              ← Previous
+            </button>
+            <button className="btn btn-secondary btn-sm" disabled={!pagination.next} onClick={() => goToPage(page + 1)}>
+              Next →
+            </button>
+          </div>
         </div>
-      ) : null}
-    </section>
+      )}
+    </div>
   );
 }
+

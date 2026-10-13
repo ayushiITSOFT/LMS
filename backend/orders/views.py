@@ -2,7 +2,7 @@ from rest_framework import generics, permissions
 
 from .models import Order
 from .serializers import OrderSerializer
-from accounts.permissions import is_student
+from accounts.permissions import is_admin, is_student
 
 
 class OrderListView(generics.ListAPIView):
@@ -10,6 +10,9 @@ class OrderListView(generics.ListAPIView):
     permission_classes = (permissions.IsAuthenticated,)
 
     def get_queryset(self):
-        if not is_student(self.request.user):
-            return Order.objects.none()
-        return Order.objects.filter(student=self.request.user).prefetch_related("items__course")
+        user = self.request.user
+        if is_admin(user):
+            return Order.objects.all().select_related("student").prefetch_related("items__course").order_by("-created_at")
+        if is_student(user):
+            return Order.objects.filter(student=user).prefetch_related("items__course").order_by("-created_at")
+        return Order.objects.none()

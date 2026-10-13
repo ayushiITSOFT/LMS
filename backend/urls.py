@@ -1,6 +1,9 @@
 from django.urls import include, path
 from django.contrib import admin
 
+from django.conf import settings
+from django.conf.urls.static import static
+
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("accounts/", include(("accounts.urls", "accounts"), namespace="accounts")),
@@ -20,4 +23,4 @@ urlpatterns = [
     path("announcements/", include(("announcements.urls", "announcements"), namespace="announcements")),
     path("files/", include(("file_management.urls", "file_management"), namespace="file_management")),
     path("audit-logs/", include(("audit_logs.urls", "audit_logs"), namespace="audit_logs")),
-]
+] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

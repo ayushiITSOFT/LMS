@@ -14,23 +14,47 @@ function queryString(params = {}) {
   return value ? `?${value}` : "";
 }
 
-export function listPublishedCourses(params) {
-  return apiClient.get(`courses/discover/${queryString(params)}`);
+export function listPublishedCourses(params = {}, token = null) {
+  return apiClient.get(`courses/discover/${queryString(params)}`, {
+    headers: authHeader(token),
+  });
 }
 
 export function getCourse(id, token) {
   return apiClient.get(`courses/${id}/`, { headers: authHeader(token) });
 }
 
+export function getInstructorDashboard(token) {
+  return apiClient.get("courses/instructor/dashboard/", { headers: authHeader(token) });
+}
+
 export function getCoursePreview(id, token) {
   return apiClient.get(`courses/${id}/preview/`, { headers: authHeader(token) });
 }
 
+function courseFormData(values) {
+  const formData = new FormData();
+  Object.entries(values).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== "") {
+      formData.append(key, value);
+    }
+  });
+  return formData;
+}
+
 export function createCourse(values, token) {
+  if (values instanceof FormData || values?.thumbnail instanceof File) {
+    const body = values instanceof FormData ? values : courseFormData(values);
+    return apiClient.formPost("courses/", body, { headers: authHeader(token) });
+  }
   return apiClient.post("courses/", values, { headers: authHeader(token) });
 }
 
 export function updateCourse(id, values, token) {
+  if (values instanceof FormData || values?.thumbnail instanceof File) {
+    const body = values instanceof FormData ? values : courseFormData(values);
+    return apiClient.formPatch(`courses/${id}/`, body, { headers: authHeader(token) });
+  }
   return apiClient.patch(`courses/${id}/`, values, { headers: authHeader(token) });
 }
 

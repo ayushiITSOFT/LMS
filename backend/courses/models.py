@@ -83,8 +83,7 @@ class Section(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        ordering = ("order",)
-        unique_together = ("course", "order")
+        ordering = ("order", "id")
 
     def save(self, *args, **kwargs):
         # Auto-assign order if not provided (0)
@@ -114,6 +113,7 @@ class Lesson(models.Model):
 
     # Content fields (optional depending on kind)   
     video_url = models.URLField(blank=True, null=True)
+    video_file = models.FileField(upload_to="lessons/videos/", blank=True, null=True)
     pdf = models.FileField(upload_to="lessons/pdfs/", blank=True, null=True)
     notes = models.TextField(blank=True)
     preview = models.BooleanField(default=False)
@@ -124,8 +124,7 @@ class Lesson(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        ordering = ("order",)
-        unique_together = ("section", "order")
+        ordering = ("order", "id")
 
     def save(self, *args, **kwargs):
         # Auto-assign order within section if not provided (0)

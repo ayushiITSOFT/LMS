@@ -29,6 +29,16 @@ FILE_RULES = {
 }
 
 
+def infer_file_type(file_name):
+    if not file_name:
+        return None
+    extension = Path(file_name).suffix.lower()
+    for file_type, rules in FILE_RULES.items():
+        if extension in rules["extensions"]:
+            return file_type
+    return None
+
+
 def validate_upload(file, file_type):
     rules = FILE_RULES.get(file_type)
     if not rules:

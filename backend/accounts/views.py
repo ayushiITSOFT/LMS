@@ -1,7 +1,7 @@
 from decimal import Decimal
 
 from django.contrib.auth import get_user_model
-from django.db.models import Sum
+from django.db.models import Q, Sum
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -14,7 +14,7 @@ from orders.models import Order
 from payment.models import Payment
 from security.throttles import AuthRateThrottle
 from .permissions import IsAdminRole
-from .serializers import LoginSerializer, RegisterSerializer
+from .serializers import LoginSerializer, RegisterSerializer, UserAdminSerializer
 
 
 User = get_user_model()
@@ -49,9 +49,12 @@ class LogoutView(APIView):
 
         try:
             token = RefreshToken(refresh_token)
-            token.blacklist()
+            if hasattr(token, "blacklist"):
+                token.blacklist()
         except TokenError:
             return Response({"refresh": "Invalid or expired token."}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception:
+            pass
 
         return Response(status=status.HTTP_205_RESET_CONTENT)
 
@@ -81,3 +84,32 @@ class AdminDashboardView(APIView):
             },
             status=status.HTTP_200_OK,
         )
+
+
+class UserAdminListView(generics.ListCreateAPIView):
+    serializer_class = UserAdminSerializer
+    permission_classes = (permissions.IsAuthenticated, IsAdminRole)
+
+    def get_queryset(self):
+        queryset = User.objects.all().order_by("-date_joined")
+        role_param = (self.request.query_params.get("role") or "").strip().lower()
+        search_param = (self.request.query_params.get("search") or "").strip()
+
+        if role_param:
+            queryset = queryset.filter(role=role_param)
+
+        if search_param:
+            queryset = queryset.filter(
+                Q(username__icontains=search_param)
+                | Q(email__icontains=search_param)
+                | Q(first_name__icontains=search_param)
+                | Q(last_name__icontains=search_param)
+            )
+
+        return queryset
+
+
+class UserAdminDetailView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = User.objects.all()
+    serializer_class = UserAdminSerializer
+    permission_classes = (permissions.IsAuthenticated, IsAdminRole)

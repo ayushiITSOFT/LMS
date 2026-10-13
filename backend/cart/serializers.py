@@ -24,6 +24,10 @@ class CartItemSerializer(serializers.ModelSerializer):
         if existing:
             raise serializers.ValidationError("This course is already in your cart.")
 
+        from enrollment.models import Enrollment
+        if Enrollment.objects.filter(student=request.user, course=value).exists():
+            raise serializers.ValidationError("You are already enrolled in this course.")
+
         return value
 
     def create(self, validated_data):

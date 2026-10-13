@@ -1,3 +1,4 @@
+from decimal import Decimal
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from django.db.models import Prefetch
@@ -8,6 +9,7 @@ from rest_framework.views import APIView
 
 from assignment.models import Assignment, AssignmentSubmission
 from certificate.models import Certificate
+from certificate.serializers import CertificateSerializer
 from courses.models import Lesson, Section
 from quiz.models import QuizAttempt
 from .models import Enrollment, CourseProgress
@@ -18,7 +20,7 @@ from .serializers import (
     MyCourseSummarySerializer,
     StudentDashboardSerializer,
 )
-from accounts.permissions import is_student
+from accounts.permissions import is_admin, is_instructor, is_student
 
 
 class EnrollmentListView(generics.ListAPIView):
@@ -26,9 +28,22 @@ class EnrollmentListView(generics.ListAPIView):
     permission_classes = (permissions.IsAuthenticated,)
 
     def get_queryset(self):
-        if not is_student(self.request.user):
+        user = self.request.user
+        course_id = self.request.query_params.get("course") or self.request.query_params.get("course_id")
+
+        if is_admin(user):
+            qs = Enrollment.objects.all()
+        elif is_instructor(user):
+            qs = Enrollment.objects.filter(course__instructor=user)
+        elif is_student(user):
+            qs = Enrollment.objects.filter(student=user)
+        else:
             return Enrollment.objects.none()
-        return Enrollment.objects.filter(student=self.request.user).select_related("course", "order")
+
+        if course_id:
+            qs = qs.filter(course_id=course_id)
+
+        return qs.select_related("student", "course", "order", "certificate").order_by("-created_at")
 
 
 class MyCourseListView(generics.ListAPIView):
@@ -75,8 +90,11 @@ class MyCourseResumeView(APIView):
             course_id=course_pk,
         )
         lessons = Lesson.objects.filter(section__course=enrollment.course).select_related("section").order_by("section__order", "order")
+        completed_lesson_ids = set(
+            CourseProgress.objects.filter(enrollment=enrollment, completed=True).values_list("lesson_id", flat=True)
+        )
         for lesson in lessons:
-            if not CourseProgress.objects.filter(enrollment=enrollment, lesson=lesson, completed=True).exists():
+            if lesson.id not in completed_lesson_ids:
                 return Response(
                     {
                         "course_id": enrollment.course.id,
@@ -253,11 +271,28 @@ class LessonCompleteView(APIView):
         progress, created = CourseProgress.objects.get_or_create(enrollment=enrollment, lesson=lesson)
         progress.mark_completed()
 
+        course_completed = enrollment.is_course_completed()
+        certificate_data = None
+        if course_completed:
+            try:
+                cert, cert_created = Certificate.objects.get_or_create(
+                    enrollment=enrollment,
+                    defaults={
+                        "student": request.user,
+                        "course": enrollment.course,
+                        "progress_percentage": Decimal("100.00"),
+                    },
+                )
+                certificate_data = CertificateSerializer(cert, context={"request": request}).data
+            except Exception:
+                pass
+
         return Response(
             {
                 "message": "Lesson marked as completed",
                 "progress_percentage": enrollment.get_progress_percentage(),
-                "course_completed": enrollment.is_course_completed(),
+                "course_completed": course_completed,
+                "certificate": certificate_data,
                 "lesson": {
                     "id": lesson.id,
                     "title": lesson.title,

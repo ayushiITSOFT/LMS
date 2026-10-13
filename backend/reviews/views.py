@@ -11,7 +11,7 @@ from .serializers import CourseReviewSerializer
 
 class CourseReviewListCreateView(generics.ListCreateAPIView):
     serializer_class = CourseReviewSerializer
-    permission_classes = (permissions.IsAuthenticated,)
+    permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
 
     def get_queryset(self):
         course = get_object_or_404(Course, pk=self.kwargs.get("course_pk"))

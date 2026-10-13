@@ -1,34 +1,37 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
-import { useAuth } from "../features/auth/useAuth.js";
+import { Link, useNavigate } from "react-router-dom";
+import { CheckCircle2, ArrowRight, ArrowLeft, ShieldCheck, Lock } from "lucide-react";
 import { listCart } from "../features/cart/cartService.js";
 import { completeFreeCheckout, createCheckout } from "../features/checkout/checkoutService.js";
 import { listPublishedCourses } from "../features/courses/courseService.js";
+import { Skeleton } from "../components/Skeleton.jsx";
+import { ErrorState } from "../components/ErrorState.jsx";
+import { EmptyState } from "../components/EmptyState.jsx";
 
 function itemsFrom(response) {
   return Array.isArray(response) ? response : response?.results || [];
 }
 
-function formatMoney(amount, currency = "USD") {
-  return `${currency} ${Number(amount || 0).toFixed(2)}`;
+function formatMoney(amount) {
+  return `$${Number(amount || 0).toFixed(2)}`;
 }
 
 export function CheckoutPage() {
-  const { access } = useAuth();
+  const navigate = useNavigate();
   const [cart, setCart] = useState([]);
   const [courses, setCourses] = useState([]);
   const [checkout, setCheckout] = useState(null);
   const [status, setStatus] = useState("loading");
-  const [actionStatus, setActionStatus] = useState("ready");
+  const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState("");
-  const [result, setResult] = useState(null);
+  const [successResult, setSuccessResult] = useState(null);
 
   useEffect(() => {
     let active = true;
     setStatus("loading");
     setMessage("");
 
-    Promise.all([listCart(access), listPublishedCourses({ page_size: 100 }), createCheckout(access)])
+    Promise.all([listCart(), listPublishedCourses({ page_size: 100 }), createCheckout()])
       .then(([cartData, courseData, checkoutData]) => {
         if (!active) return;
         setCart(itemsFrom(cartData));
@@ -45,121 +48,143 @@ export function CheckoutPage() {
     return () => {
       active = false;
     };
-  }, [access]);
+  }, []);
 
   const courseById = useMemo(
     () => new Map(courses.map((course) => [Number(course.id), course])),
     [courses]
   );
   const total = Number(checkout?.total_amount || 0);
-  const currency = checkout?.currency || "USD";
-  const isFree = checkout && total === 0;
-  const hasItems = Number(checkout?.course_count || cart.length) > 0;
+  const isFree = total === 0;
+  const hasItems = cart.length > 0;
 
-  async function handleFreeCheckout() {
-    setActionStatus("loading");
+  async function handleCompleteOrder() {
+    setSubmitting(true);
     setMessage("");
-    setResult(null);
 
     try {
-      const data = await completeFreeCheckout(access);
-      setResult(data);
+      const data = await completeFreeCheckout();
+      setSuccessResult(data);
+      setTimeout(() => {
+        navigate("/my-courses");
+      }, 2500);
     } catch (error) {
-      setMessage(error.message || "Unable to complete free checkout.");
+      setMessage(error.message || "Unable to complete payment process.");
     } finally {
-      setActionStatus("ready");
+      setSubmitting(false);
     }
   }
 
   if (status === "loading") {
-    return <p className="page-message">Preparing checkout...</p>;
+    return <Skeleton height="350px" />;
   }
 
   if (status === "error") {
-    return <p className="form-error">{message}</p>;
+    return <ErrorState message={message} onRetry={() => window.location.reload()} />;
   }
 
   return (
-    <section className="content-page">
-      <div className="page-heading">
+    <div style={{ display: "flex", flexDirection: "column", gap: "2rem" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <div>
-          <h1>Checkout</h1>
-          <p>
-            {checkout?.course_count || cart.length} selected{" "}
-            {(checkout?.course_count || cart.length) === 1 ? "course" : "courses"} / Total{" "}
-            {formatMoney(total, currency)}
-          </p>
+          <h1 className="h1">Checkout</h1>
+          <p className="text-subtitle">Complete your purchase to gain instant access to your courses.</p>
         </div>
-        <Link className="button-link" to="/cart">
-          Back to cart
+        <Link className="btn btn-outline btn-sm" to="/cart">
+          <ArrowLeft size={16} /> Back to Cart
         </Link>
       </div>
 
-      {message ? <p className={message.includes("ready") ? "form-success" : "form-error"}>{message}</p> : null}
-      {result ? (
-        <div className="form-success">
-          <p>{result.message}. Order #{result.order_id} / {formatMoney(result.total_amount, result.currency)}</p>
-          <Link to="/enrollment">Check enrolled courses</Link>
+      {successResult ? (
+        <div className="ui-card" style={{ background: "var(--success-light)", borderColor: "var(--success-border)", textAlign: "center", padding: "3rem 2rem" }}>
+          <CheckCircle2 size={48} style={{ color: "var(--success)", margin: "0 auto 1rem" }} />
+          <h2 className="h2" style={{ color: "#15803d", marginBottom: "0.5rem" }}>{successResult.message || "Payment Successful!"}</h2>
+          <p style={{ color: "#166534", marginBottom: "1.5rem" }}>
+            Order #{successResult.order_id} generated. You are now enrolled! Redirecting to your learning dashboard...
+          </p>
+          <Link to="/my-courses" className="btn btn-success btn-lg">
+            Go to My Courses <ArrowRight size={18} />
+          </Link>
         </div>
-      ) : null}
-
-      {!hasItems ? <p className="page-message">Your cart is empty.</p> : null}
-
-      {hasItems ? (
-        <>
-          <dl className="detail-list">
-            <div>
-              <dt>Backend total</dt>
-              <dd>{formatMoney(total, currency)}</dd>
+      ) : !hasItems ? (
+        <EmptyState
+          title="Your cart is empty"
+          description="Add some courses to your cart before proceeding to checkout."
+          action={<Link to="/courses" className="btn btn-primary btn-sm">Explore Courses</Link>}
+        />
+      ) : (
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 380px", gap: "2rem" }}>
+          {/* Items Summary */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+            <div className="ui-card">
+              <h3 className="h3" style={{ marginBottom: "1rem" }}>Order Items ({cart.length})</h3>
+              <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+                {cart.map((item) => {
+                  const course = courseById.get(Number(item.course));
+                  return (
+                    <div key={item.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0.85rem", border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)" }}>
+                      <div>
+                        <div style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--primary)", textTransform: "uppercase" }}>
+                          {course?.category || "Course"}
+                        </div>
+                        <h4 style={{ fontWeight: 700, fontSize: "1rem" }}>{course?.title || `Course #${item.course}`}</h4>
+                      </div>
+                      <div style={{ fontWeight: 800, fontSize: "1.1rem" }}>
+                        {course && Number(course.price) > 0 ? `$${Number(course.price).toFixed(2)}` : "Free"}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
-            <div>
-              <dt>Checkout type</dt>
-              <dd>{isFree ? "Free" : "Paid"}</dd>
-            </div>
-            <div>
-              <dt>Items</dt>
-              <dd>{checkout?.course_count || cart.length}</dd>
-            </div>
-          </dl>
 
-          <div className="course-grid">
-            {cart.map((item) => {
-              const course = courseById.get(Number(item.course));
-
-              return (
-                <article className="course-card" key={item.id}>
-                  <div>
-                    <small>{course?.category || `Course #${item.course}`}</small>
-                    <h2>{course?.title || "Selected course"}</h2>
-                    <p>{course?.subtitle || course?.description || "Course details require access."}</p>
-                  </div>
-                  <div className="course-card-footer">
-                    <span>Included in checkout</span>
-                    <Link to={`/courses/${item.course}`}>Details</Link>
-                  </div>
-                </article>
-              );
-            })}
+            {/* Payment Guarantee Notice */}
+            <div className="ui-card" style={{ background: "var(--bg-subtle)", display: "flex", gap: "1rem", alignItems: "center" }}>
+              <ShieldCheck size={32} style={{ color: "var(--primary)", flexShrink: 0 }} />
+              <div>
+                <h4 style={{ fontWeight: 700, fontSize: "0.95rem" }}>30-Day Money-Back Guarantee</h4>
+                <p style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>Gain full immediate access. SSL Encrypted & Secure Checkout.</p>
+              </div>
+            </div>
           </div>
 
-          <div className="actions">
-            {isFree ? (
-              <button
-                className="cart-button"
-                disabled={actionStatus === "loading" || Boolean(result)}
-                onClick={handleFreeCheckout}
-                type="button"
-              >
-                Complete free checkout
-              </button>
-            ) : (
-              <Link className="button-link" to="/payment">
-                Continue to payment
-              </Link>
+          {/* Checkout Summary Card */}
+          <div className="ui-card" style={{ alignSelf: "start", display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+            <h3 className="h3">Checkout Summary</h3>
+
+            {message && (
+              <div style={{ color: "var(--danger)", fontSize: "0.88rem", fontWeight: 600 }}>{message}</div>
             )}
+
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", borderBottom: "1px solid var(--border-color)", paddingBottom: "1rem" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", color: "var(--text-muted)", fontSize: "0.95rem" }}>
+                <span>Subtotal ({cart.length} items)</span>
+                <span>{formatMoney(total)}</span>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", color: "var(--text-muted)", fontSize: "0.95rem" }}>
+                <span>Discounts / Coupon</span>
+                <span style={{ color: "var(--success)" }}>$0.00</span>
+              </div>
+            </div>
+
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <span style={{ fontWeight: 700, fontSize: "1.1rem" }}>Total Due</span>
+              <span style={{ fontSize: "1.6rem", fontWeight: 800, color: "var(--primary)" }}>{formatMoney(total)}</span>
+            </div>
+
+            <button
+              type="button"
+              disabled={submitting}
+              onClick={handleCompleteOrder}
+              className="btn btn-primary btn-lg"
+              style={{ width: "100%", marginTop: "0.5rem" }}
+            >
+              <Lock size={18} />
+              {submitting ? "Processing Payment..." : isFree ? "Complete Free Enrollment" : "Pay & Enroll Now"}
+            </button>
           </div>
-        </>
-      ) : null}
-    </section>
+        </div>
+      )}
+    </div>
   );
 }

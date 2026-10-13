@@ -53,11 +53,34 @@ class CourseDiscoveryListView(generics.ListAPIView):
     ordering_fields = ("created_at", "updated_at", "price", "title", "average_rating")
 
     def get_queryset(self):
+        user = self.request.user
+        status_param = (self.request.query_params.get("status") or "").strip().lower()
+        scope_param = (self.request.query_params.get("scope") or "").strip().lower()
+        instructor_param = self.request.query_params.get("instructor") or self.request.query_params.get("instructor_id")
+        is_mine = (self.request.query_params.get("mine") == "true") or (scope_param == "mine")
+
         queryset = (
-            Course.objects.filter(status=Course.Status.PUBLISHED)
+            Course.objects.all()
             .select_related("instructor")
             .annotate(average_rating=Avg("reviews__rating"), review_count=Count("reviews"))
         )
+
+        if user.is_authenticated and (is_instructor(user) or is_admin(user)):
+            if is_mine:
+                if is_instructor(user) and not is_admin(user):
+                    queryset = queryset.filter(instructor=user)
+                elif is_admin(user) and instructor_param:
+                    queryset = queryset.filter(instructor_id=instructor_param)
+
+            if status_param == "draft":
+                queryset = queryset.filter(status=Course.Status.DRAFT)
+            elif status_param == "published":
+                queryset = queryset.filter(status=Course.Status.PUBLISHED)
+            elif not is_mine:
+                queryset = queryset.filter(status=Course.Status.PUBLISHED)
+        else:
+            queryset = queryset.filter(status=Course.Status.PUBLISHED)
+
         language = (self.request.query_params.get("language") or "").strip()
         is_paid = self.request.query_params.get("is_paid")
 
@@ -77,10 +100,13 @@ class InstructorDashboardView(APIView):
     permission_classes = (permissions.IsAuthenticated,)
 
     def get(self, request):
-        if not is_instructor(request.user):
-            return Response({"detail": "Only instructors can access the dashboard."}, status=status.HTTP_403_FORBIDDEN)
+        if not is_instructor(request.user) and not is_admin(request.user):
+            return Response({"detail": "Only instructors or admins can access the dashboard."}, status=status.HTTP_403_FORBIDDEN)
 
-        courses = Course.objects.filter(instructor=request.user)
+        if is_admin(request.user):
+            courses = Course.objects.all()
+        else:
+            courses = Course.objects.filter(instructor=request.user)
         course_ids = courses.values_list("id", flat=True)
         review_stats = courses.aggregate(
             average_rating=Avg("reviews__rating"),
@@ -112,22 +138,26 @@ class CourseRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = CourseSerializer
 
     def get_permissions(self):
-        # Read requires authentication, edits require ownership/admin
         if self.request.method in ("PUT", "PATCH", "DELETE"):
             return [permissions.IsAuthenticated(), CanManageOwnCourse()]
-        return [permissions.IsAuthenticated()]
+        return [permissions.AllowAny()]
 
     def get_object(self):
         course = super().get_object()
         if self.request.method not in permissions.SAFE_METHODS:
             return course
 
+        if course.status == Course.Status.PUBLISHED:
+            return course
+
         user = self.request.user
-        if is_admin(user) or (is_instructor(user) and course.instructor_id == user.id):
-            return course
-        if is_student(user) and Enrollment.objects.filter(student=user, course=course).exists():
-            return course
-        raise PermissionDenied("You must be enrolled in this course to view its lessons.")
+        if user.is_authenticated:
+            if is_admin(user) or (is_instructor(user) and course.instructor_id == user.id):
+                return course
+            if is_student(user) and Enrollment.objects.filter(student=user, course=course).exists():
+                return course
+
+        raise PermissionDenied("You do not have permission to view this unpublished course.")
 
     def perform_update(self, serializer):
         previous = snapshot(self.get_object())
@@ -194,18 +224,22 @@ class LessonPreviewView(APIView):
 # Course Builder views: Sections and Lessons
 
 class SectionListCreateView(generics.ListCreateAPIView):
-    """List and create sections for a course. Only course owner/admin may manage."""
+    """List and create sections for a course."""
 
     serializer_class = SectionSerializer
-    permission_classes = (permissions.IsAuthenticated, CanManageOwnCourse)
+
+    def get_permissions(self):
+        if self.request.method == "POST":
+            return [permissions.IsAuthenticated(), CanManageOwnCourse()]
+        return [permissions.AllowAny()]
 
     def get_course(self):
         return get_object_or_404(Course, pk=self.kwargs.get("course_pk"))
 
     def get_queryset(self):
         course = self.get_course()
-        # enforce owner/admin permission on the course
-        self.check_object_permissions(self.request, course)
+        if self.request.method != "GET":
+            self.check_object_permissions(self.request, course)
         return course.sections.prefetch_related("lessons").order_by("order")
 
     def perform_create(self, serializer):
