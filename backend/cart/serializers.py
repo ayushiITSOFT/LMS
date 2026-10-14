@@ -4,12 +4,20 @@ from courses.models import Course
 from .models import CartItem
 
 
+class CartCourseSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Course
+        fields = ("id", "title", "category", "price", "thumbnail", "status")
+        read_only_fields = fields
+
+
 class CartItemSerializer(serializers.ModelSerializer):
     course = serializers.PrimaryKeyRelatedField(queryset=Course.objects.all())
+    course_details = CartCourseSerializer(source="course", read_only=True)
 
     class Meta:
         model = CartItem
-        fields = ("id", "course", "created_at")
+        fields = ("id", "course", "course_details", "created_at")
         read_only_fields = ("id", "created_at")
 
     def validate_course(self, value):

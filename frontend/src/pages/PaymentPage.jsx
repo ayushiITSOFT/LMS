@@ -1,13 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../features/auth/useAuth.js";
 import { listCart } from "../features/cart/cartService.js";
 import { createCheckout, processPayment } from "../features/checkout/checkoutService.js";
-import { listPublishedCourses } from "../features/courses/courseService.js";
-
-function itemsFrom(response) {
-  return Array.isArray(response) ? response : response?.results || [];
-}
 
 function formatMoney(amount, currency = "USD") {
   return `${currency} ${Number(amount || 0).toFixed(2)}`;
@@ -16,7 +11,6 @@ function formatMoney(amount, currency = "USD") {
 export function PaymentPage() {
   const { access } = useAuth();
   const [cart, setCart] = useState([]);
-  const [courses, setCourses] = useState([]);
   const [checkout, setCheckout] = useState(null);
   const [payment, setPayment] = useState(null);
   const [status, setStatus] = useState("loading");
@@ -28,11 +22,10 @@ export function PaymentPage() {
     setStatus("loading");
     setMessage("");
 
-    Promise.all([listCart(access), listPublishedCourses({ page_size: 100 }), createCheckout(access)])
-      .then(([cartData, courseData, checkoutData]) => {
+    Promise.all([listCart(access), createCheckout(access)])
+      .then(([cartData, checkoutData]) => {
         if (!active) return;
-        setCart(itemsFrom(cartData));
-        setCourses(itemsFrom(courseData));
+        setCart(cartData);
         setCheckout(checkoutData);
         setStatus("ready");
       })
@@ -47,10 +40,6 @@ export function PaymentPage() {
     };
   }, [access]);
 
-  const courseById = useMemo(
-    () => new Map(courses.map((course) => [Number(course.id), course])),
-    [courses]
-  );
   const total = Number(checkout?.total_amount || 0);
   const currency = checkout?.currency || "USD";
   const hasItems = Number(checkout?.course_count || cart.length) > 0;
@@ -142,7 +131,7 @@ export function PaymentPage() {
 
           <div className="course-grid">
             {cart.map((item) => {
-              const course = courseById.get(Number(item.course));
+              const course = item.course_details;
 
               return (
                 <article className="course-card" key={item.id}>

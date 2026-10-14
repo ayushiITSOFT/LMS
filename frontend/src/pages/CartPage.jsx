@@ -1,15 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../features/auth/useAuth.js";
 import { listCart, removeFromCart } from "../features/cart/cartService.js";
-import { listPublishedCourses } from "../features/courses/courseService.js";
 import { Skeleton } from "../components/Skeleton.jsx";
 import { EmptyState } from "../components/EmptyState.jsx";
 import { ErrorState } from "../components/ErrorState.jsx";
-
-function itemsFrom(response) {
-  return Array.isArray(response) ? response : response?.results || [];
-}
 
 function priceOf(course) {
   return Number(course?.price || 0);
@@ -23,41 +18,42 @@ function formatPrice(price) {
 export function CartPage() {
   const { access } = useAuth();
   const [cart, setCart] = useState([]);
-  const [courses, setCourses] = useState([]);
   const [status, setStatus] = useState("loading");
   const [message, setMessage] = useState("");
   const [removingId, setRemovingId] = useState(null);
 
   useEffect(() => {
     let active = true;
+
+    function refreshCart() {
+      return listCart(access)
+        .then((cartItems) => {
+          if (!active) return;
+          setCart(cartItems);
+          setStatus("ready");
+          setMessage("");
+        })
+        .catch((error) => {
+          if (!active) return;
+          setMessage(error.message || "Unable to load cart.");
+          setStatus("error");
+        });
+    }
+
     setStatus("loading");
     setMessage("");
 
-    Promise.all([listCart(access), listPublishedCourses({ page_size: 100 })])
-      .then(([cartData, courseData]) => {
-        if (!active) return;
-        setCart(cartData);
-        setCourses(itemsFrom(courseData));
-        setStatus("ready");
-      })
-      .catch((error) => {
-        if (!active) return;
-        setMessage(error.message || "Unable to load cart.");
-        setStatus("error");
-      });
+    refreshCart();
+    window.addEventListener("cart_updated", refreshCart);
 
     return () => {
       active = false;
+      window.removeEventListener("cart_updated", refreshCart);
     };
   }, [access]);
 
-  const courseById = useMemo(
-    () => new Map(courses.map((course) => [Number(course.id), course])),
-    [courses]
-  );
-
   const total = cart.reduce(
-    (sum, item) => sum + priceOf(courseById.get(Number(item.course))),
+    (sum, item) => sum + priceOf(item.course_details),
     0
   );
 
@@ -112,7 +108,7 @@ export function CartPage() {
           {/* Cart Items List */}
           <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
             {cart.map((item) => {
-              const course = courseById.get(Number(item.course));
+              const course = item.course_details;
 
               return (
                 <div className="card" key={item.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "1rem" }}>

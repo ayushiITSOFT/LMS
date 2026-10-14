@@ -1,16 +1,11 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { CheckCircle2, ArrowRight, ArrowLeft, ShieldCheck, Lock } from "lucide-react";
 import { listCart } from "../features/cart/cartService.js";
 import { completeFreeCheckout, createCheckout } from "../features/checkout/checkoutService.js";
-import { listPublishedCourses } from "../features/courses/courseService.js";
 import { Skeleton } from "../components/Skeleton.jsx";
 import { ErrorState } from "../components/ErrorState.jsx";
 import { EmptyState } from "../components/EmptyState.jsx";
-
-function itemsFrom(response) {
-  return Array.isArray(response) ? response : response?.results || [];
-}
 
 function formatMoney(amount) {
   return `$${Number(amount || 0).toFixed(2)}`;
@@ -19,7 +14,6 @@ function formatMoney(amount) {
 export function CheckoutPage() {
   const navigate = useNavigate();
   const [cart, setCart] = useState([]);
-  const [courses, setCourses] = useState([]);
   const [checkout, setCheckout] = useState(null);
   const [status, setStatus] = useState("loading");
   const [submitting, setSubmitting] = useState(false);
@@ -31,11 +25,10 @@ export function CheckoutPage() {
     setStatus("loading");
     setMessage("");
 
-    Promise.all([listCart(), listPublishedCourses({ page_size: 100 }), createCheckout()])
-      .then(([cartData, courseData, checkoutData]) => {
+    Promise.all([listCart(), createCheckout()])
+      .then(([cartData, checkoutData]) => {
         if (!active) return;
-        setCart(itemsFrom(cartData));
-        setCourses(itemsFrom(courseData));
+        setCart(cartData);
         setCheckout(checkoutData);
         setStatus("ready");
       })
@@ -50,10 +43,6 @@ export function CheckoutPage() {
     };
   }, []);
 
-  const courseById = useMemo(
-    () => new Map(courses.map((course) => [Number(course.id), course])),
-    [courses]
-  );
   const total = Number(checkout?.total_amount || 0);
   const isFree = total === 0;
   const hasItems = cart.length > 0;
@@ -120,7 +109,7 @@ export function CheckoutPage() {
               <h3 className="h3" style={{ marginBottom: "1rem" }}>Order Items ({cart.length})</h3>
               <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
                 {cart.map((item) => {
-                  const course = courseById.get(Number(item.course));
+                  const course = item.course_details;
                   return (
                     <div key={item.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0.85rem", border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)" }}>
                       <div>
