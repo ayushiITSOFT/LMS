@@ -33,15 +33,7 @@ import { listQuizzes } from "../features/quiz/quizService.js";
 import { listAssignments } from "../features/assignments/assignmentService.js";
 import { Skeleton } from "../components/Skeleton.jsx";
 import { ErrorState } from "../components/ErrorState.jsx";
-function getMediaUrl(url) {
-  if (!url) return null;
-  if (url.startsWith("http://") || url.startsWith("https://") || url.startsWith("blob:")) {
-    return url;
-  }
-  const baseUrl = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000";
-  const cleanPath = url.startsWith("/") ? url : `/${url}`;
-  return `${baseUrl}${cleanPath}`;
-}
+import { getMediaUrl } from "../utils/mediaUrl.js";
 
 function getEmbedUrl(url) {
   if (!url) return null;
@@ -1220,5 +1212,4 @@ export function EnrollmentDetailPage() {
     </div>
   );
 }
-
 
