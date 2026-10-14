@@ -73,9 +73,8 @@ export function CourseListPage() {
     Promise.all([listCart(access), listWishlist(access)])
       .then(([cartItems, wishlistItems]) => {
         if (!active) return;
-        const cItems = Array.isArray(cartItems) ? cartItems : cartItems?.items || [];
         const wItems = Array.isArray(wishlistItems) ? wishlistItems : wishlistItems?.results || [];
-        setCartIds(new Set(cItems.map((item) => Number(item.course))));
+        setCartIds(new Set(cartItems.map((item) => Number(item.course))));
         setWishlistIds(new Set(wItems.map((item) => Number(item.course))));
       })
       .catch(() => null);
@@ -323,4 +322,3 @@ export function CourseListPage() {
     </div>
   );
 }
-

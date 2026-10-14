@@ -36,8 +36,7 @@ export function CartPage() {
     Promise.all([listCart(access), listPublishedCourses({ page_size: 100 })])
       .then(([cartData, courseData]) => {
         if (!active) return;
-        const cItems = Array.isArray(cartData) ? cartData : cartData?.items || [];
-        setCart(cItems);
+        setCart(cartData);
         setCourses(itemsFrom(courseData));
         setStatus("ready");
       })

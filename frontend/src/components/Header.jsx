@@ -65,13 +65,16 @@ export function Header({ mobileMenuOpen, onToggleMobileMenu, theme, onToggleThem
       return;
     }
 
+    let updateCartCount;
     if (role === ROLES.STUDENT) {
-      listCart()
+      updateCartCount = () => listCart()
         .then((res) => {
-          const items = Array.isArray(res) ? res : res?.results || [];
-          setCartCount(items.length);
+          setCartCount(res.length);
         })
         .catch(() => null);
+
+      updateCartCount();
+      window.addEventListener("cart_updated", updateCartCount);
 
       listWishlist()
         .then((res) => {
@@ -89,6 +92,12 @@ export function Header({ mobileMenuOpen, onToggleMobileMenu, theme, onToggleThem
         setUnreadNotifications(unread);
       })
       .catch(() => null);
+
+    return () => {
+      if (updateCartCount) {
+        window.removeEventListener("cart_updated", updateCartCount);
+      }
+    };
   }, [isAuthenticated, role]);
 
   async function handleLogout() {
