@@ -1,5 +1,6 @@
-from django.urls import include, path
+from django.urls import include, path, re_path
 from django.contrib import admin
+from django.views.static import serve
 
 from django.conf import settings
 from django.conf.urls.static import static
@@ -23,4 +24,11 @@ urlpatterns = [
     path("announcements/", include(("announcements.urls", "announcements"), namespace="announcements")),
     path("files/", include(("file_management.urls", "file_management"), namespace="file_management")),
     path("audit-logs/", include(("audit_logs.urls", "audit_logs"), namespace="audit_logs")),
-] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+]
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+else:
+    urlpatterns += [
+        re_path(r"^media/(?P<path>.*)$", serve, {"document_root": settings.MEDIA_ROOT}),
+    ]
