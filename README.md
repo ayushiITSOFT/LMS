@@ -1,15 +1,17 @@
 # Learning-Management-System-
 
-## Persisting uploaded course images on Render
+## Upload storage with Neon
 
-Render's application filesystem is temporary unless the service has a persistent
-disk. To keep uploaded thumbnails available after deploys and restarts:
+When `DATABASE_URL` is configured, Django stores uploaded thumbnails, lesson
+videos and PDFs, assignment files, and file-management uploads in the database
+in 1 MiB chunks. The media endpoint streams those chunks and supports byte-range
+requests so video playback can seek. Without `DATABASE_URL`, uploads continue
+to use Django's normal filesystem storage.
 
-1. Attach a persistent disk to the backend web service in Render (for example,
-   with mount path `/var/data`).
-2. Set the backend environment variable `MEDIA_ROOT` to `/var/data/media`.
-3. Redeploy the backend. New uploads will be stored on the disk and served at
-   their existing `/media/` URLs.
+Before deploying this change to Render, ensure the start/build process applies
+database migrations (`python manage.py migrate`). The `file_management`
+migration creates the tables required for database-backed media.
 
-Images uploaded before the disk was configured may no longer exist on the
-backend. Re-upload those course thumbnails after the disk is mounted.
+Existing media files are not copied automatically. Re-upload files that are
+already missing. Neon free-tier storage and network quotas apply to every
+uploaded file; videos in particular can use that quota quickly.
