@@ -1,9 +1,28 @@
 from django.urls import include, path, re_path
 from django.contrib import admin
+from django.http import Http404
 from django.views.static import serve
 
 from django.conf import settings
 from django.conf.urls.static import static
+
+LEGACY_MEDIA_LOCATIONS = (
+    ("course_thumbnails/", settings.BASE_DIR / "course_thumbnails"),
+    ("lessons/videos/", settings.BASE_DIR / "lessons" / "videos"),
+    ("lessons/pdfs/", settings.BASE_DIR / "lessons" / "pdfs"),
+    ("assignments/pdfs/", settings.BASE_DIR / "assignments" / "pdfs"),
+)
+
+
+def serve_media(request, path):
+    try:
+        return serve(request, path, document_root=settings.MEDIA_ROOT)
+    except Http404:
+        for prefix, document_root in LEGACY_MEDIA_LOCATIONS:
+            if path.startswith(prefix):
+                return serve(request, path[len(prefix):], document_root=document_root)
+        raise
+
 
 urlpatterns = [
     path("admin/", admin.site.urls),
@@ -30,5 +49,5 @@ if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 else:
     urlpatterns += [
-        re_path(r"^media/(?P<path>.*)$", serve, {"document_root": settings.MEDIA_ROOT}),
+        re_path(r"^media/(?P<path>.*)$", serve_media),
     ]
