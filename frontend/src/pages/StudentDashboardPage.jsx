@@ -230,9 +230,6 @@ export function StudentDashboardPage() {
                 <ShoppingBag size={18} style={{ color: "var(--slate-700)" }} />
                 <span>Recent Orders & Transactions</span>
               </h2>
-              <Link to="/orders" className="btn btn-outline btn-sm">
-                View All Orders
-              </Link>
             </div>
 
             {orders.length === 0 ? (
