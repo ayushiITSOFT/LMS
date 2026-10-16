@@ -32,6 +32,7 @@ import { Skeleton } from "../components/Skeleton.jsx";
 import { ErrorState } from "../components/ErrorState.jsx";
 import { StatusBadge } from "../components/StatusBadge.jsx";
 import { getMediaUrl } from "../utils/mediaUrl.js";
+import { formatCurrency } from "../utils/formatCurrency.js";
 
 export function CourseDetailPage() {
   const { id } = useParams();
@@ -216,7 +217,7 @@ export function CourseDetailPage() {
     return <ErrorState message={message || "Course details not found."} onRetry={() => navigate("/courses")} />;
   }
 
-  const priceFormatted = Number(course.price || 0) > 0 ? `$${Number(course.price).toFixed(2)}` : "Free";
+  const priceFormatted = Number(course.price || 0) > 0 ? formatCurrency(course.price) : "Free";
   const rawInstructor = course.instructor?.username || course.instructor_name || course.instructor;
   const instructorName = typeof rawInstructor === "string" ? rawInstructor : (rawInstructor ? `Instructor #${rawInstructor}` : "Expert Instructor");
   const totalLessons = sections.reduce((acc, sec) => acc + (sec.lessons?.length || 0), 0);
@@ -565,4 +566,3 @@ export function CourseDetailPage() {
     </div>
   );
 }
-

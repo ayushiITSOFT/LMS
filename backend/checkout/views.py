@@ -28,7 +28,7 @@ class CheckoutView(APIView):
             {
                 "message": "Checkout session created",
                 "total_amount": float(total),
-                "currency": "USD",
+                "currency": "INR",
                 "course_count": cart_items.count(),
             },
             status=status.HTTP_200_OK,

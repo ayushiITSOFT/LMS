@@ -48,6 +48,7 @@ import { listCourseCertificates, issueCertificate } from "../features/certificat
 import { listCourseEnrollments } from "../features/enrollment/enrollmentService.js";
 import { CertificateModal } from "../components/CertificateModal.jsx";
 import { Skeleton } from "../components/Skeleton.jsx";
+import { formatCurrency } from "../utils/formatCurrency.js";
 
 const defaultOptions = [
   { text: "", is_correct: true },
@@ -69,7 +70,7 @@ const emptyLesson = {
 };
 
 function formatPrice(price) {
-  return Number(price || 0) > 0 ? `₹${Number(price).toFixed(2)}` : "Free";
+  return Number(price || 0) > 0 ? formatCurrency(price) : "Free";
 }
 
 function fieldError(errors, name) {

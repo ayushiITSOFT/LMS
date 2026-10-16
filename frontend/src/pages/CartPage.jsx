@@ -5,6 +5,7 @@ import { listCart, removeFromCart } from "../features/cart/cartService.js";
 import { Skeleton } from "../components/Skeleton.jsx";
 import { EmptyState } from "../components/EmptyState.jsx";
 import { ErrorState } from "../components/ErrorState.jsx";
+import { formatCurrency } from "../utils/formatCurrency.js";
 
 function priceOf(course) {
   return Number(course?.price || 0);
@@ -12,7 +13,7 @@ function priceOf(course) {
 
 function formatPrice(price) {
   const amount = Number(price || 0);
-  return amount > 0 ? `$${amount.toFixed(2)}` : "Free";
+  return amount > 0 ? formatCurrency(amount) : "Free";
 }
 
 export function CartPage() {

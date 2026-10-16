@@ -74,7 +74,7 @@ class PaymentProcessView(APIView):
                     "order_id": order.id,
                     "payment_id": payment.id,
                     "total_amount": total_amount,
-                    "currency": "USD",
+                    "currency": "INR",
                     "status": order.status,
                     "payment_status": payment.status,
                     "transaction_id": payment.transaction_id,
@@ -86,7 +86,7 @@ class PaymentProcessView(APIView):
                     "message": "Free order created successfully",
                     "order_id": order.id,
                     "total_amount": Decimal("0.00"),
-                    "currency": "USD",
+                    "currency": "INR",
                     "status": order.status,
                 }
 

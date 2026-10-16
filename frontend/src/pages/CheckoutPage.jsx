@@ -6,10 +6,7 @@ import { completeFreeCheckout, createCheckout } from "../features/checkout/check
 import { Skeleton } from "../components/Skeleton.jsx";
 import { ErrorState } from "../components/ErrorState.jsx";
 import { EmptyState } from "../components/EmptyState.jsx";
-
-function formatMoney(amount) {
-  return `$${Number(amount || 0).toFixed(2)}`;
-}
+import { formatCurrency } from "../utils/formatCurrency.js";
 
 export function CheckoutPage() {
   const navigate = useNavigate();
@@ -119,7 +116,7 @@ export function CheckoutPage() {
                         <h4 style={{ fontWeight: 700, fontSize: "1rem" }}>{course?.title || `Course #${item.course}`}</h4>
                       </div>
                       <div style={{ fontWeight: 800, fontSize: "1.1rem" }}>
-                        {course && Number(course.price) > 0 ? `$${Number(course.price).toFixed(2)}` : "Free"}
+                        {course && Number(course.price) > 0 ? formatCurrency(course.price) : "Free"}
                       </div>
                     </div>
                   );
@@ -148,17 +145,17 @@ export function CheckoutPage() {
             <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", borderBottom: "1px solid var(--border-color)", paddingBottom: "1rem" }}>
               <div style={{ display: "flex", justifyContent: "space-between", color: "var(--text-muted)", fontSize: "0.95rem" }}>
                 <span>Subtotal ({cart.length} items)</span>
-                <span>{formatMoney(total)}</span>
+                <span>{formatCurrency(total)}</span>
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", color: "var(--text-muted)", fontSize: "0.95rem" }}>
                 <span>Discounts / Coupon</span>
-                <span style={{ color: "var(--success)" }}>$0.00</span>
+                <span style={{ color: "var(--success)" }}>{formatCurrency(0)}</span>
               </div>
             </div>
 
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <span style={{ fontWeight: 700, fontSize: "1.1rem" }}>Total Due</span>
-              <span style={{ fontSize: "1.6rem", fontWeight: 800, color: "var(--primary)" }}>{formatMoney(total)}</span>
+              <span style={{ fontSize: "1.6rem", fontWeight: 800, color: "var(--primary)" }}>{formatCurrency(total)}</span>
             </div>
 
             <button

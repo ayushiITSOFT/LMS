@@ -20,6 +20,7 @@ import { EmptyState } from "../components/EmptyState.jsx";
 import { StatusBadge } from "../components/StatusBadge.jsx";
 import { DataTable } from "../components/DataTable.jsx";
 import { getMediaUrl } from "../utils/mediaUrl.js";
+import { formatCurrency } from "../utils/formatCurrency.js";
 
 function CourseActionsDropdown({ course, isAdmin, onDelete }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -315,7 +316,7 @@ export function InstructorCourseListPage() {
     {
       header: "Price",
       accessor: "price",
-      cell: (row) => (Number(row.price || 0) > 0 ? `$${Number(row.price).toFixed(2)}` : "Free"),
+      cell: (row) => (Number(row.price || 0) > 0 ? formatCurrency(row.price) : "Free"),
     },
     {
       header: "Status",

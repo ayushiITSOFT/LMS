@@ -3,10 +3,7 @@ import { Link } from "react-router-dom";
 import { useAuth } from "../features/auth/useAuth.js";
 import { listCart } from "../features/cart/cartService.js";
 import { createCheckout, processPayment } from "../features/checkout/checkoutService.js";
-
-function formatMoney(amount, currency = "USD") {
-  return `${currency} ${Number(amount || 0).toFixed(2)}`;
-}
+import { formatCurrency } from "../utils/formatCurrency.js";
 
 export function PaymentPage() {
   const { access } = useAuth();
@@ -41,7 +38,7 @@ export function PaymentPage() {
   }, [access]);
 
   const total = Number(checkout?.total_amount || 0);
-  const currency = checkout?.currency || "USD";
+  const currency = checkout?.currency || "INR";
   const hasItems = Number(checkout?.course_count || cart.length) > 0;
   const isFree = checkout && total === 0;
 
@@ -76,7 +73,7 @@ export function PaymentPage() {
           <p>
             {checkout?.course_count || cart.length}{" "}
             {(checkout?.course_count || cart.length) === 1 ? "course" : "courses"} / Total{" "}
-            {formatMoney(total, currency)}
+            {formatCurrency(total, currency)}
           </p>
         </div>
         <Link className="button-link" to="/checkout">
@@ -99,7 +96,7 @@ export function PaymentPage() {
             </div>
             <div>
               <dt>Total</dt>
-              <dd>{formatMoney(payment.total_amount, payment.currency)}</dd>
+              <dd>{formatCurrency(payment.total_amount, payment.currency || currency)}</dd>
             </div>
             <div>
               <dt>Status</dt>
@@ -117,7 +114,7 @@ export function PaymentPage() {
           <dl className="detail-list">
             <div>
               <dt>Backend total</dt>
-              <dd>{formatMoney(total, currency)}</dd>
+              <dd>{formatCurrency(total, currency)}</dd>
             </div>
             <div>
               <dt>Payment flow</dt>

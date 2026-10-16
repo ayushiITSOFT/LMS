@@ -11,6 +11,7 @@ import {
   PieChart as PieChartIcon,
 } from "lucide-react";
 import { getAdminDashboard } from "../features/admin/adminService.js";
+import { formatCurrency } from "../utils/formatCurrency.js";
 import {
   getRevenueTrends,
   getEnrollmentTrends,
@@ -356,7 +357,7 @@ function InteractiveAreaChart({ revenueTrends, totalRevenue, totalOrders }) {
               {activePoint.data.label}
             </div>
             <div style={{ fontWeight: 800, color: "#38bdf8", fontSize: "0.85rem" }}>
-              ${Number(activePoint.data.revenue).toFixed(2)}
+              {formatCurrency(activePoint.data.revenue)}
             </div>
             <div style={{ color: "#e2e8f0", fontSize: "0.7rem" }}>
               {activePoint.data.orders} order{activePoint.data.orders === 1 ? "" : "s"}
@@ -946,7 +947,7 @@ export function AdminDashboardPage() {
                 </div>
               </div>
               <div style={{ fontSize: "1.85rem", fontWeight: 800, color: "var(--text-main, #0f172a)", letterSpacing: "-0.02em" }}>
-                ${Number(data?.total_revenue || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                {formatCurrency(data?.total_revenue || 0)}
               </div>
               <div style={{ display: "flex", gap: "0.6rem", fontSize: "0.775rem", color: "var(--text-muted, #64748b)", borderTop: "1px solid var(--border-color, #f1f5f9)", paddingTop: "0.5rem" }}>
                 <span>Total Orders: <strong>{data?.total_orders ?? 0}</strong></span>

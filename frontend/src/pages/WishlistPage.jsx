@@ -7,6 +7,7 @@ import { useAuth } from "../features/auth/useAuth.js";
 import { Skeleton } from "../components/Skeleton.jsx";
 import { EmptyState } from "../components/EmptyState.jsx";
 import { ErrorState } from "../components/ErrorState.jsx";
+import { formatCurrency } from "../utils/formatCurrency.js";
 
 function itemsFrom(response) {
   return Array.isArray(response) ? response : response?.results || [];
@@ -14,7 +15,7 @@ function itemsFrom(response) {
 
 function formatPrice(price) {
   const amount = Number(price || 0);
-  return amount > 0 ? `$${amount.toFixed(2)}` : "Free";
+  return amount > 0 ? formatCurrency(amount) : "Free";
 }
 
 export function WishlistPage() {

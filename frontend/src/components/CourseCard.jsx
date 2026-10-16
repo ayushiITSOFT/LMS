@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { Star, ShoppingCart, Heart, Check, BookOpen, ArrowRight, User } from "lucide-react";
 import { getMediaUrl } from "../utils/mediaUrl.js";
+import { formatCurrency } from "../utils/formatCurrency.js";
 
 export function CourseCard({
   course,
@@ -13,7 +14,7 @@ export function CourseCard({
 }) {
   if (!course) return null;
 
-  const priceFormatted = course.price && Number(course.price) > 0 ? `$${Number(course.price).toFixed(2)}` : "Free";
+  const priceFormatted = course.price && Number(course.price) > 0 ? formatCurrency(course.price) : "Free";
   const rating = course.average_rating || course.rating || null;
   const instructorName = course.instructor?.username || course.instructor_name || course.instructor || "Instructor";
   const progressVal = progress ?? course.progress_percentage ?? course.progress ?? null;
@@ -164,4 +165,3 @@ export function CourseCard({
     </div>
   );
 }
-

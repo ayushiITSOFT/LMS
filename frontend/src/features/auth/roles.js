@@ -11,9 +11,13 @@ export const ROLE_LABELS = {
 };
 
 export function normalizeRole(role) {
-  return Object.values(ROLES).includes(role) ? role : null;
+  const normalizedRole = typeof role === "string" ? role.trim().toLowerCase() : "";
+  return Object.values(ROLES).includes(normalizedRole) ? normalizedRole : null;
 }
 
 export function canAccessRole(role, allowedRoles) {
-  return normalizeRole(role) ? allowedRoles.includes(role) : false;
+  const normalizedRole = normalizeRole(role);
+  return normalizedRole
+    ? allowedRoles.some((allowedRole) => normalizeRole(allowedRole) === normalizedRole)
+    : false;
 }

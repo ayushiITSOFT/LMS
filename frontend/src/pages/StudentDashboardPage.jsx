@@ -4,6 +4,7 @@ import { GraduationCap, CheckCircle, Clock, Award, BookOpen, ArrowRight, History
 import { useAuth } from "../features/auth/useAuth.js";
 import { getStudentDashboard, listEnrollments } from "../features/enrollment/enrollmentService.js";
 import { listOrders } from "../features/orders/orderService.js";
+import { formatCurrency } from "../utils/formatCurrency.js";
 import { StatCard } from "../components/StatCard.jsx";
 import { StatCardSkeleton } from "../components/Skeleton.jsx";
 import { ErrorState } from "../components/ErrorState.jsx";
@@ -241,7 +242,7 @@ export function StudentDashboardPage() {
                     <div>
                       <div style={{ fontWeight: 600, fontSize: "0.85rem" }}>Order #{o.id}</div>
                       <div style={{ fontSize: "0.775rem", color: "var(--text-muted)" }}>
-                        {o.created_at ? new Date(o.created_at).toLocaleDateString() : ""} • ${Number(o.total_amount || 0).toFixed(2)}
+                        {o.created_at ? new Date(o.created_at).toLocaleDateString() : ""} • {formatCurrency(o.total_amount)}
                       </div>
                     </div>
                     <StatusBadge status={o.status} />

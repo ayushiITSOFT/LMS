@@ -86,9 +86,12 @@ export function AppRoutes() {
           <Route path="cart" element={<CartPage />} />
           <Route path="checkout" element={<CheckoutPage />} />
           <Route path="payment" element={<PaymentPage />} />
+          <Route path="wishlist" element={<WishlistPage />} />
+        </Route>
+
+        <Route element={<ProtectedRoute allowedRoles={[ROLES.STUDENT, ROLES.ADMIN]} />}>
           <Route path="orders" element={<OrderListPage />} />
           <Route path="orders/:id" element={<OrderDetailPage />} />
-          <Route path="wishlist" element={<WishlistPage />} />
         </Route>
 
         {/* Instructor & Admin Course Management Routes */}
@@ -128,4 +131,3 @@ export function AppRoutes() {
     </Routes>
   );
 }
-

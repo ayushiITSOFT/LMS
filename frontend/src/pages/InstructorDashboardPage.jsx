@@ -20,6 +20,7 @@ import { StatCard } from "../components/StatCard.jsx";
 import { StatCardSkeleton } from "../components/Skeleton.jsx";
 import { ErrorState } from "../components/ErrorState.jsx";
 import { DataTable } from "../components/DataTable.jsx";
+import { formatCurrency } from "../utils/formatCurrency.js";
 
 export function InstructorDashboardPage() {
   const [metrics, setMetrics] = useState(null);
@@ -117,7 +118,7 @@ export function InstructorDashboardPage() {
             <StatCard title="Published Courses" value={metrics?.published_courses ?? 0} icon={CheckCircle} variant="success" helperText="Live in marketplace" />
             <StatCard title="Draft Courses" value={metrics?.draft_courses ?? 0} icon={FileText} variant="warning" helperText="Pending publication" />
             <StatCard title="Total Students" value={metrics?.total_students ?? 0} icon={Users} variant="info" helperText="Active course learners" />
-            <StatCard title="Total Revenue" value={`$${Number(metrics?.total_revenue || 0).toFixed(2)}`} icon={DollarSign} variant="success" helperText="Net course earnings" />
+            <StatCard title="Total Revenue" value={formatCurrency(metrics?.total_revenue || 0)} icon={DollarSign} variant="success" helperText="Net course earnings" />
             <StatCard title="Avg Rating" value={metrics?.average_rating ? `${metrics.average_rating}` : "N/A"} icon={Star} variant="warning" helperText="Student evaluation score" />
           </div>
 

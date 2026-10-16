@@ -30,9 +30,10 @@ import { getCoursePreview, getCourse, listSections } from "../features/courses/c
 import { Skeleton } from "../components/Skeleton.jsx";
 import { ErrorState } from "../components/ErrorState.jsx";
 import { StatusBadge } from "../components/StatusBadge.jsx";
+import { formatCurrency } from "../utils/formatCurrency.js";
 
 function formatPrice(price) {
-  return Number(price || 0) > 0 ? `$${Number(price).toFixed(2)}` : "Free";
+  return Number(price || 0) > 0 ? formatCurrency(price) : "Free";
 }
 
 function getMediaUrl(url) {
@@ -669,4 +670,3 @@ export function CoursePreviewPage() {
     </div>
   );
 }
-

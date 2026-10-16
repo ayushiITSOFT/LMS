@@ -11,6 +11,7 @@ import {
 import { Skeleton } from "../components/Skeleton.jsx";
 import { ErrorState } from "../components/ErrorState.jsx";
 import { DataTable } from "../components/DataTable.jsx";
+import { formatCurrency } from "../utils/formatCurrency.js";
 
 export function AnalyticsPage() {
   const [completionData, setCompletionData] = useState(null);
@@ -191,7 +192,7 @@ export function AnalyticsPage() {
               {revenueTrends.trends.map((r, idx) => (
                 <div key={idx} style={{ display: "flex", justifyContent: "space-between", padding: "0.5rem 0", borderBottom: "1px solid var(--border-color)", fontSize: "0.85rem" }}>
                   <span>{r.date}</span>
-                  <strong>${Number(r.revenue || 0).toFixed(2)} ({r.orders} orders)</strong>
+                  <strong>{formatCurrency(r.revenue)} ({r.orders} orders)</strong>
                 </div>
               ))}
             </div>
