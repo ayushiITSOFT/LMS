@@ -85,8 +85,8 @@ function CourseActionsDropdown({ course, isAdmin, onDelete }) {
           padding: "0.35rem 0.55rem",
           fontSize: "0.825rem",
           borderRadius: "6px",
-          background: isOpen ? "var(--slate-200, #e2e8f0)" : "var(--bg-surface, #ffffff)",
-          borderColor: "var(--border-color, #cbd5e1)",
+          background: isOpen ? "var(--bg-subtle)" : "var(--bg-surface)",
+          borderColor: "var(--border-color)",
         }}
         title="More course options"
         aria-expanded={isOpen}
@@ -103,10 +103,10 @@ function CourseActionsDropdown({ course, isAdmin, onDelete }) {
             top: "calc(100% + 4px)",
             zIndex: 100,
             minWidth: "185px",
-            background: "#ffffff",
+            background: "var(--bg-surface)",
             borderRadius: "10px",
-            boxShadow: "0 10px 25px -5px rgba(15, 23, 42, 0.16), 0 0 0 1px rgba(0, 0, 0, 0.08)",
-            border: "1px solid var(--border-color, #e2e8f0)",
+            boxShadow: "var(--shadow-md)",
+            border: "1px solid var(--border-color)",
             padding: "0.35rem",
             display: "flex",
             flexDirection: "column",
@@ -123,15 +123,15 @@ function CourseActionsDropdown({ course, isAdmin, onDelete }) {
                 gap: "0.6rem",
                 padding: "0.45rem 0.75rem",
                 fontSize: "0.825rem",
-                color: "var(--slate-700, #334155)",
+                color: "var(--text-secondary)",
                 textDecoration: "none",
                 borderRadius: "6px",
                 fontWeight: 500,
               }}
-              onMouseEnter={(e) => (e.currentTarget.style.background = "#f1f5f9")}
+              onMouseEnter={(e) => (e.currentTarget.style.background = "var(--bg-subtle)")}
               onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
             >
-              <Edit3 size={14} style={{ color: "var(--slate-500, #64748b)" }} />
+              <Edit3 size={14} style={{ color: "var(--slate-400)" }} />
               <span>Edit Details</span>
             </Link>
           )}
@@ -145,15 +145,15 @@ function CourseActionsDropdown({ course, isAdmin, onDelete }) {
               gap: "0.6rem",
               padding: "0.45rem 0.75rem",
               fontSize: "0.825rem",
-              color: "var(--slate-700, #334155)",
+              color: "var(--text-secondary)",
               textDecoration: "none",
               borderRadius: "6px",
               fontWeight: 500,
             }}
-            onMouseEnter={(e) => (e.currentTarget.style.background = "#f1f5f9")}
+            onMouseEnter={(e) => (e.currentTarget.style.background = "var(--bg-subtle)")}
             onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
           >
-            <Eye size={14} style={{ color: "var(--slate-500, #64748b)" }} />
+            <Eye size={14} style={{ color: "var(--slate-400)" }} />
             <span>Preview Course</span>
           </Link>
 
@@ -166,15 +166,15 @@ function CourseActionsDropdown({ course, isAdmin, onDelete }) {
               gap: "0.6rem",
               padding: "0.45rem 0.75rem",
               fontSize: "0.825rem",
-              color: "var(--slate-700, #334155)",
+              color: "var(--text-secondary)",
               textDecoration: "none",
               borderRadius: "6px",
               fontWeight: 500,
             }}
-            onMouseEnter={(e) => (e.currentTarget.style.background = "#f1f5f9")}
+            onMouseEnter={(e) => (e.currentTarget.style.background = "var(--bg-subtle)")}
             onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
           >
-            <Award size={14} style={{ color: "#059669" }} />
+            <Award size={14} style={{ color: "var(--success)" }} />
             <span>Certificates</span>
           </Link>
 
@@ -187,21 +187,21 @@ function CourseActionsDropdown({ course, isAdmin, onDelete }) {
               gap: "0.6rem",
               padding: "0.45rem 0.75rem",
               fontSize: "0.825rem",
-              color: "var(--slate-700, #334155)",
+              color: "var(--text-secondary)",
               textDecoration: "none",
               borderRadius: "6px",
               fontWeight: 500,
             }}
-            onMouseEnter={(e) => (e.currentTarget.style.background = "#f1f5f9")}
+            onMouseEnter={(e) => (e.currentTarget.style.background = "var(--bg-subtle)")}
             onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
           >
-            <CheckSquare size={14} style={{ color: "#6366f1" }} />
+            <CheckSquare size={14} style={{ color: "var(--primary)" }} />
             <span>Assignments</span>
           </Link>
 
           {!isAdmin && (
             <>
-              <div style={{ height: "1px", background: "var(--border-color, #f1f5f9)", margin: "0.25rem 0" }} />
+              <div style={{ height: "1px", background: "var(--border-color)", margin: "0.25rem 0" }} />
               <button
                 type="button"
                 onClick={() => {
@@ -214,7 +214,7 @@ function CourseActionsDropdown({ course, isAdmin, onDelete }) {
                   gap: "0.6rem",
                   padding: "0.45rem 0.75rem",
                   fontSize: "0.825rem",
-                  color: "#dc2626",
+                  color: "var(--danger)",
                   background: "transparent",
                   border: "none",
                   borderRadius: "6px",
@@ -223,7 +223,7 @@ function CourseActionsDropdown({ course, isAdmin, onDelete }) {
                   textAlign: "left",
                   fontWeight: 500,
                 }}
-                onMouseEnter={(e) => (e.currentTarget.style.background = "#fef2f2")}
+                onMouseEnter={(e) => (e.currentTarget.style.background = "var(--danger-light)")}
                 onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
               >
                 <Trash2 size={14} />

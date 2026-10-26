@@ -168,7 +168,7 @@ export function AdminUserListPage() {
             fontWeight: 600,
             width: "auto",
             borderRadius: "6px",
-            borderColor: "var(--border-color, #cbd5e1)",
+            borderColor: "var(--border-color)",
             background: "var(--bg-surface, #ffffff)",
             cursor: row.id === currentUser?.id ? "not-allowed" : "pointer",
           }}
@@ -264,7 +264,7 @@ export function AdminUserListPage() {
           background: "var(--bg-surface, #ffffff)",
           padding: "1.5rem 1.75rem",
           borderRadius: "var(--radius-lg, 16px)",
-          border: "1px solid var(--border-color, #e2e8f0)",
+          border: "1px solid var(--border-color)",
         }}
       >
         <div>
@@ -322,7 +322,7 @@ export function AdminUserListPage() {
           gap: "1rem",
           padding: "1.25rem",
           borderRadius: "var(--radius-lg, 14px)",
-          border: "1px solid var(--border-color, #e2e8f0)",
+          border: "1px solid var(--border-color)",
           background: "var(--bg-surface, #ffffff)",
         }}
       >
@@ -403,7 +403,7 @@ export function AdminUserListPage() {
           icon="👥"
         />
       ) : (
-        <div style={{ background: "var(--bg-surface, #ffffff)", borderRadius: "var(--radius-lg, 14px)", border: "1px solid var(--border-color, #e2e8f0)", overflow: "hidden" }}>
+        <div style={{ background: "var(--bg-surface, #ffffff)", borderRadius: "var(--radius-lg, 14px)", border: "1px solid var(--border-color)", overflow: "hidden" }}>
           <DataTable columns={columns} data={users} keyField="id" />
         </div>
       )}

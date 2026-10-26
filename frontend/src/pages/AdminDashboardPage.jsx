@@ -526,7 +526,7 @@ function InteractiveDonutChart({ data }) {
       </div>
 
       {/* Legend list */}
-      <div style={{ display: "flex", flexDirection: "column", gap: "0.45rem", borderTop: "1px solid var(--border-color, #f1f5f9)", paddingTop: "0.75rem" }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: "0.45rem", borderTop: "1px solid var(--border-color)", paddingTop: "0.75rem" }}>
         {arcs.map((arc, i) => (
           <div
             key={i}
@@ -887,7 +887,7 @@ export function AdminDashboardPage() {
               <div style={{ fontSize: "1.85rem", fontWeight: 800, color: "var(--text-main, #0f172a)", letterSpacing: "-0.02em" }}>
                 {data?.total_users ?? 0}
               </div>
-              <div style={{ display: "flex", gap: "0.6rem", fontSize: "0.775rem", color: "var(--text-muted, #64748b)", borderTop: "1px solid var(--border-color, #f1f5f9)", paddingTop: "0.5rem" }}>
+              <div style={{ display: "flex", gap: "0.6rem", fontSize: "0.775rem", color: "var(--text-muted, #64748b)", borderTop: "1px solid var(--border-color)", paddingTop: "0.5rem" }}>
                 <span>Students: <strong>{data?.total_students ?? 0}</strong></span>
                 <span>•</span>
                 <span>Instructors: <strong>{data?.total_instructors ?? 0}</strong></span>
@@ -904,7 +904,7 @@ export function AdminDashboardPage() {
                 padding: "1.25rem 1.5rem",
                 borderRadius: "var(--radius-lg, 14px)",
                 background: "var(--bg-surface, #ffffff)",
-                border: "1px solid var(--border-color, #e2e8f0)",
+                border: "1px solid var(--border-color)",
               }}
             >
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -918,7 +918,7 @@ export function AdminDashboardPage() {
               <div style={{ fontSize: "1.85rem", fontWeight: 800, color: "var(--text-main, #0f172a)", letterSpacing: "-0.02em" }}>
                 {data?.total_courses ?? 0}
               </div>
-              <div style={{ display: "flex", gap: "0.6rem", fontSize: "0.775rem", color: "var(--text-muted, #64748b)", borderTop: "1px solid var(--border-color, #f1f5f9)", paddingTop: "0.5rem" }}>
+              <div style={{ display: "flex", gap: "0.6rem", fontSize: "0.775rem", color: "var(--text-muted, #64748b)", borderTop: "1px solid var(--border-color)", paddingTop: "0.5rem" }}>
                 <span style={{ color: "#059669", fontWeight: 600 }}>✓ {data?.published_courses ?? 0} Published</span>
                 <span>•</span>
                 <span>Catalog Active</span>
@@ -935,7 +935,7 @@ export function AdminDashboardPage() {
                 padding: "1.25rem 1.5rem",
                 borderRadius: "var(--radius-lg, 14px)",
                 background: "var(--bg-surface, #ffffff)",
-                border: "1px solid var(--border-color, #e2e8f0)",
+                border: "1px solid var(--border-color)",
               }}
             >
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -949,7 +949,7 @@ export function AdminDashboardPage() {
               <div style={{ fontSize: "1.85rem", fontWeight: 800, color: "var(--text-main, #0f172a)", letterSpacing: "-0.02em" }}>
                 {formatCurrency(data?.total_revenue || 0)}
               </div>
-              <div style={{ display: "flex", gap: "0.6rem", fontSize: "0.775rem", color: "var(--text-muted, #64748b)", borderTop: "1px solid var(--border-color, #f1f5f9)", paddingTop: "0.5rem" }}>
+              <div style={{ display: "flex", gap: "0.6rem", fontSize: "0.775rem", color: "var(--text-muted, #64748b)", borderTop: "1px solid var(--border-color)", paddingTop: "0.5rem" }}>
                 <span>Total Orders: <strong>{data?.total_orders ?? 0}</strong></span>
               </div>
             </div>
@@ -964,7 +964,7 @@ export function AdminDashboardPage() {
                 padding: "1.25rem 1.5rem",
                 borderRadius: "var(--radius-lg, 14px)",
                 background: "var(--bg-surface, #ffffff)",
-                border: "1px solid var(--border-color, #e2e8f0)",
+                border: "1px solid var(--border-color)",
               }}
             >
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -978,7 +978,7 @@ export function AdminDashboardPage() {
               <div style={{ fontSize: "1.85rem", fontWeight: 800, color: (data?.pending_payments ?? 0) > 0 ? "#dc2626" : "var(--text-main, #0f172a)", letterSpacing: "-0.02em" }}>
                 {data?.pending_payments ?? 0}
               </div>
-              <div style={{ display: "flex", gap: "0.6rem", fontSize: "0.775rem", color: "var(--text-muted, #64748b)", borderTop: "1px solid var(--border-color, #f1f5f9)", paddingTop: "0.5rem" }}>
+              <div style={{ display: "flex", gap: "0.6rem", fontSize: "0.775rem", color: "var(--text-muted, #64748b)", borderTop: "1px solid var(--border-color)", paddingTop: "0.5rem" }}>
                 <span>{(data?.pending_payments ?? 0) > 0 ? "Requires review in Orders" : "All transactions settled"}</span>
               </div>
             </div>

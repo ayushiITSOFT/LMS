@@ -133,7 +133,7 @@ export function AuditLogsPage() {
           background: "var(--bg-surface, #ffffff)",
           padding: "1.5rem 1.75rem",
           borderRadius: "var(--radius-lg, 16px)",
-          border: "1px solid var(--border-color, #e2e8f0)",
+          border: "1px solid var(--border-color)",
         }}
       >
         <div>
@@ -190,7 +190,7 @@ export function AuditLogsPage() {
           gap: "1rem",
           padding: "1rem 1.25rem",
           borderRadius: "var(--radius-lg, 14px)",
-          border: "1px solid var(--border-color, #e2e8f0)",
+          border: "1px solid var(--border-color)",
           background: "var(--bg-surface, #ffffff)",
         }}
       >
@@ -231,7 +231,7 @@ export function AuditLogsPage() {
           icon="🛡️"
         />
       ) : (
-        <div style={{ background: "var(--bg-surface, #ffffff)", borderRadius: "var(--radius-lg, 14px)", border: "1px solid var(--border-color, #e2e8f0)", overflow: "hidden" }}>
+        <div style={{ background: "var(--bg-surface, #ffffff)", borderRadius: "var(--radius-lg, 14px)", border: "1px solid var(--border-color)", overflow: "hidden" }}>
           <DataTable columns={columns} data={filteredLogs} keyField="id" />
         </div>
       )}

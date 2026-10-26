@@ -131,7 +131,7 @@ export function AdminEnrollmentsPage() {
               <span>Completion</span>
               <strong style={{ color: "var(--text-main, #0f172a)" }}>{pct}%</strong>
             </div>
-            <div style={{ height: "6px", background: "var(--border-color, #e2e8f0)", borderRadius: "3px", overflow: "hidden" }}>
+            <div style={{ height: "6px", background: "var(--border-color)", borderRadius: "3px", overflow: "hidden" }}>
               <div
                 style={{
                   height: "100%",
@@ -206,7 +206,7 @@ export function AdminEnrollmentsPage() {
               fontWeight: 600,
               background: "var(--bg-subtle, #f8fafc)",
               color: "var(--text-muted, #64748b)",
-              border: "1px solid var(--border-color, #e2e8f0)",
+              border: "1px solid var(--border-color)",
             }}
           >
             <Clock size={12} />
@@ -239,7 +239,7 @@ export function AdminEnrollmentsPage() {
           background: "var(--bg-surface, #ffffff)",
           padding: "1.5rem 1.75rem",
           borderRadius: "var(--radius-lg, 16px)",
-          border: "1px solid var(--border-color, #e2e8f0)",
+          border: "1px solid var(--border-color)",
         }}
       >
         <div>
@@ -268,19 +268,19 @@ export function AdminEnrollmentsPage() {
 
       {/* 2. Top Metric Strip */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1rem" }}>
-        <div className="card" style={{ padding: "1rem 1.25rem", borderRadius: "12px", background: "var(--bg-surface, #ffffff)", border: "1px solid var(--border-color, #e2e8f0)" }}>
+        <div className="card" style={{ padding: "1rem 1.25rem", borderRadius: "12px", background: "var(--bg-surface, #ffffff)", border: "1px solid var(--border-color)" }}>
           <div style={{ fontSize: "0.8rem", color: "var(--text-muted, #64748b)", fontWeight: 600 }}>Total Enrollments</div>
           <div style={{ fontSize: "1.5rem", fontWeight: 800, color: "var(--text-main, #0f172a)", marginTop: "0.25rem" }}>{enrollments.length}</div>
         </div>
-        <div className="card" style={{ padding: "1rem 1.25rem", borderRadius: "12px", background: "var(--bg-surface, #ffffff)", border: "1px solid var(--border-color, #e2e8f0)" }}>
+        <div className="card" style={{ padding: "1rem 1.25rem", borderRadius: "12px", background: "var(--bg-surface, #ffffff)", border: "1px solid var(--border-color)" }}>
           <div style={{ fontSize: "0.8rem", color: "var(--text-muted, #64748b)", fontWeight: 600 }}>Completed Courses</div>
           <div style={{ fontSize: "1.5rem", fontWeight: 800, color: "#059669", marginTop: "0.25rem" }}>{completedCount}</div>
         </div>
-        <div className="card" style={{ padding: "1rem 1.25rem", borderRadius: "12px", background: "var(--bg-surface, #ffffff)", border: "1px solid var(--border-color, #e2e8f0)" }}>
+        <div className="card" style={{ padding: "1rem 1.25rem", borderRadius: "12px", background: "var(--bg-surface, #ffffff)", border: "1px solid var(--border-color)" }}>
           <div style={{ fontSize: "0.8rem", color: "var(--text-muted, #64748b)", fontWeight: 600 }}>In Progress</div>
           <div style={{ fontSize: "1.5rem", fontWeight: 800, color: "var(--primary, #6366f1)", marginTop: "0.25rem" }}>{inProgressCount}</div>
         </div>
-        <div className="card" style={{ padding: "1rem 1.25rem", borderRadius: "12px", background: "var(--bg-surface, #ffffff)", border: "1px solid var(--border-color, #e2e8f0)" }}>
+        <div className="card" style={{ padding: "1rem 1.25rem", borderRadius: "12px", background: "var(--bg-surface, #ffffff)", border: "1px solid var(--border-color)" }}>
           <div style={{ fontSize: "0.8rem", color: "var(--text-muted, #64748b)", fontWeight: 600 }}>Completion Rate</div>
           <div style={{ fontSize: "1.5rem", fontWeight: 800, color: "#0284c7", marginTop: "0.25rem" }}>{completionRate}%</div>
         </div>
@@ -297,7 +297,7 @@ export function AdminEnrollmentsPage() {
           gap: "1rem",
           padding: "1rem 1.25rem",
           borderRadius: "var(--radius-lg, 14px)",
-          border: "1px solid var(--border-color, #e2e8f0)",
+          border: "1px solid var(--border-color)",
           background: "var(--bg-surface, #ffffff)",
         }}
       >
@@ -361,7 +361,7 @@ export function AdminEnrollmentsPage() {
           icon="🎓"
         />
       ) : (
-        <div style={{ background: "var(--bg-surface, #ffffff)", borderRadius: "var(--radius-lg, 14px)", border: "1px solid var(--border-color, #e2e8f0)", overflow: "hidden" }}>
+        <div style={{ background: "var(--bg-surface, #ffffff)", borderRadius: "var(--radius-lg, 14px)", border: "1px solid var(--border-color)", overflow: "hidden" }}>
           <DataTable columns={columns} data={filteredEnrollments} keyField="id" />
         </div>
       )}

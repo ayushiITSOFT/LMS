@@ -303,15 +303,15 @@ export function LoginPage() {
                 display: "flex", alignItems: "flex-start", gap: "0.6rem",
                 padding: "0.75rem 1rem",
                 borderRadius: "10px",
-                background: message.includes("created") ? "#ecfdf5" : "#fef2f2",
-                color: message.includes("created") ? "#065f46" : "#b91c1c",
+                background: message.includes("created") ? "var(--success-light)" : "var(--danger-light)",
+                color: message.includes("created") ? "var(--success)" : "var(--danger)",
                 fontSize: "0.85rem", fontWeight: 600,
-                border: `1px solid ${message.includes("created") ? "#a7f3d0" : "#fecaca"}`,
+                border: `1px solid ${message.includes("created") ? "var(--success-border)" : "var(--danger-border)"}`,
                 marginBottom: "1.25rem",
               }}>
                 {message.includes("created")
-                  ? <CheckCircle2 size={16} style={{ color: "#10b981", flexShrink: 0, marginTop: "1px" }} />
-                  : <AlertCircle size={16} style={{ color: "#ef4444", flexShrink: 0, marginTop: "1px" }} />
+                  ? <CheckCircle2 size={16} style={{ color: "var(--success)", flexShrink: 0, marginTop: "1px" }} />
+                  : <AlertCircle size={16} style={{ color: "var(--danger)", flexShrink: 0, marginTop: "1px" }} />
                 }
                 <span>{message}</span>
               </div>

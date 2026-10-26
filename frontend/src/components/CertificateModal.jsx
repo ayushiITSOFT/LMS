@@ -345,10 +345,12 @@ export function CertificateModal({ certificate, onClose, defaultStudentName }) {
             alignItems: "center",
             flexWrap: "wrap",
             gap: "0.75rem",
-            background: "#ffffff",
+            background: "var(--bg-surface)",
+            color: "var(--text-main)",
+            border: "1px solid var(--border-color)",
             padding: "0.85rem 1.25rem",
             borderRadius: "12px",
-            boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1)",
+            boxShadow: "var(--shadow-md)",
           }}
         >
           <button
